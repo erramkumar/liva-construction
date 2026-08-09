@@ -124,7 +124,7 @@
         <li class="nav-item" data-tab="quantity">
           <a href="#quantity">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"></path><path d="M8 10h8M8 14h8"></path></svg>
-            Quantity Estimator
+            Jetty BOQ Estimator
           </a>
         </li>
         <li class="nav-item" data-tab="planner">
@@ -1179,94 +1179,102 @@
           </div>
         </section>
 
-        <!-- QUANTITY ESTIMATOR TAB -->
+        <!-- JETTY BOQ & COST ESTIMATOR TAB -->
         <section id="quantity" class="page-section">
-          <div class="calculator-container" style="grid-template-columns: 350px 1fr;">
+          <div class="calculator-container" style="grid-template-columns: 400px 1fr;">
+            <!-- CONTROL PANEL -->
             <div class="control-panel">
-              <h3 class="panel-title">Structure Parameters</h3>
+              <h3 class="panel-title">Jetty BOQ Configuration</h3>
               
               <div class="input-group">
-                <label class="input-label">Member Type</label>
-                <select id="input-qty-type">
-                  <option value="slab" selected>Concrete Slab</option>
-                  <option value="beam">Concrete Beam</option>
-                  <option value="column">Concrete Column</option>
-                  <option value="brickwork">Brick Wall (Masonry)</option>
+                <label class="input-label">Project Location / Type</label>
+                <select id="input-boq-category" style="width: 100%;">
+                  <option value="passenger" selected>Passenger Jetty (Madhwad)</option>
+                  <option value="fish">Existing Fish Jetty (Refurbishment)</option>
                 </select>
               </div>
 
-              <div id="qty-dims-container">
-                <div class="input-group">
-                  <label class="input-label" id="qty-lbl-1">Length (m)</label>
-                  <input type="number" id="qty-dim-1" value="5.0" step="0.1">
-                </div>
-                <div class="input-group">
-                  <label class="input-label" id="qty-lbl-2">Width / Width of wall (m)</label>
-                  <input type="number" id="qty-dim-2" value="4.0" step="0.1">
-                </div>
-                <div class="input-group">
-                  <label class="input-label" id="qty-lbl-3">Thickness / Height (m)</label>
-                  <input type="number" id="qty-dim-3" value="0.15" step="0.01">
-                </div>
-              </div>
-
-              <div class="input-group" id="concrete-mix-group">
-                <label class="input-label">Concrete Mix Grade</label>
-                <select id="input-qty-mix">
-                  <option value="M15">M15 (1:2:4)</option>
-                  <option value="M20" selected>M20 (1:1.5:3)</option>
-                  <option value="M25">M25 (1:1:2)</option>
+              <div class="input-group">
+                <label class="input-label">Pile Configuration Option</label>
+                <select id="input-boq-option" style="width: 100%;">
+                  <option value="single" selected>Option 1: Single Pile Option</option>
+                  <option value="twin">Option 2: Twin Pile Option (Revised)</option>
                 </select>
               </div>
 
-              <div class="input-group" id="steel-ratio-group">
-                <div class="input-label">
-                  <span>Steel Ratio (%)</span>
-                  <span class="input-val" id="val-qty-steel">1.2 %</span>
+              <div class="input-group" style="margin-top: 15px; border-top: 1px solid var(--border-color-soft); padding-top: 15px;">
+                <label class="input-label" style="color: var(--accent-orange);">Interactive BOQ Quick Rates (Rs)</label>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 11px; color: var(--text-secondary);">Pile Boring (/Rmt)</span>
+                    <input type="number" id="rate-boq-pile" value="28000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 11px; color: var(--text-secondary);">Pile Muff (/Nos)</span>
+                    <input type="number" id="rate-boq-muff" value="45000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 11px; color: var(--text-secondary);">Precast Beams (/Cum)</span>
+                    <input type="number" id="rate-boq-beam" value="65000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 11px; color: var(--text-secondary);">Fenders (/Nos)</span>
+                    <input type="number" id="rate-boq-fender" value="75000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 11px; color: var(--text-secondary);">Bollards (/Nos)</span>
+                    <input type="number" id="rate-boq-bollard" value="45000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+                  </div>
                 </div>
-                <input type="range" id="input-qty-steel" min="0.5" max="4.0" step="0.1" value="1.2">
               </div>
 
-              <button class="btn btn-primary" id="btn-add-estimate" style="margin-top: 10px;">Add to Bill of Quantities</button>
+              <div class="planner-hint" style="margin-top: 15px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>Hover over table items to highlight components in the 3D model.</span>
+              </div>
             </div>
 
+            <!-- DISPLAY PANEL -->
             <div class="display-panel">
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color-soft); padding-bottom: 10px; margin-bottom: 20px;">
-                <h3 class="panel-title" style="border: none; margin: 0; padding: 0;">Quantity Takeoff Summary</h3>
-                <div style="display: flex; gap: 8px;">
-                  <button class="btn btn-primary" id="btn-export-qty" style="padding: 8px 16px; font-size: 13px;">Export PDF/Report</button>
-                  <button class="btn" id="btn-clear-qty" style="padding: 8px 16px; font-size: 13px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">Reset</button>
-                </div>
-              </div>
-
-              <div class="table-wrapper" style="flex-grow: 1;">
-                <table class="calc-table" id="qty-estimate-table">
+              <h3 class="panel-title" id="boq-title">Madhwad Passenger Jetty Estimate Summary</h3>
+              
+              <div class="table-wrapper" style="max-height: 280px; overflow-y: auto;">
+                <table class="calc-table" id="boq-table">
                   <thead>
                     <tr>
-                      <th>Structure Description</th>
-                      <th>Volume</th>
-                      <th>Cement (Bags)</th>
-                      <th>Sand (m³)</th>
-                      <th>Aggregate (m³)</th>
-                      <th>Steel (kg)</th>
-                      <th>Bricks (Nos)</th>
+                      <th>S.No</th>
+                      <th>Description of Work</th>
+                      <th>Qty</th>
+                      <th>Unit</th>
+                      <th>Rate (Rs)</th>
+                      <th>Amount (Rs)</th>
                     </tr>
                   </thead>
-                  <tbody id="qty-table-body">
-                    <!-- Items added dynamically -->
+                  <tbody id="boq-table-body">
+                    <!-- Loaded dynamically -->
                   </tbody>
                   <tfoot>
-                    <tr class="total-row" id="qty-total-row">
-                      <td>Total Estimate</td>
-                      <td id="tot-qty-vol">0.00 m³</td>
-                      <td id="tot-qty-cement">0</td>
-                      <td id="tot-qty-sand">0.00</td>
-                      <td id="tot-qty-agg">0.00</td>
-                      <td id="tot-qty-steel">0</td>
-                      <td id="tot-qty-bricks">0</td>
+                    <tr class="total-row">
+                      <td colspan="5">Total Estimated Cost</td>
+                      <td id="res-boq-total">Rs 0.00</td>
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+
+              <!-- Comparative Cost difference banner -->
+              <div id="boq-comparison-banner" class="alert-banner alert-success" style="margin-top: 10px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <span id="boq-comparison-text">Revised Option requires Rs 21,77,946 extra compared to Single Pile design.</span>
+              </div>
+
+              <!-- 3D Jetty Visualizer Canvas -->
+              <div class="canvas-wrapper" style="height: 250px; display: flex; align-items: center; justify-content: center; background: #070b13; margin-top: 10px; position: relative;">
+                <canvas id="boqCanvas" class="canvas-element" style="width:100%; height:100%;"></canvas>
+                <div id="boq-canvas-overlay" style="position: absolute; top: 10px; right: 10px; background: rgba(8, 12, 20, 0.85); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 12px; font-size: 11px; font-family: var(--font-mono); color: var(--accent-cyan); display: none;">
+                  ACTIVE ELEMENT: <span id="boq-active-mesh" style="font-weight: 700;">NONE</span>
+                </div>
               </div>
             </div>
           </div>
