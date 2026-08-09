@@ -79,8 +79,72 @@ export class BeamSolver {
     this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
   }
 
+  // IS 456 Table 19 Concrete Shear Strength (tau_c) 2D Interpolator
+  getTauC(pt, fck) {
+    const ptKeys = [0.15, 0.25, 0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00];
+    const grades = [15, 20, 25, 30, 35, 40];
+    const table = {
+      0.15: {15:0.28, 20:0.28, 25:0.29, 30:0.29, 35:0.29, 40:0.30},
+      0.25: {15:0.35, 20:0.36, 25:0.36, 30:0.37, 35:0.37, 40:0.38},
+      0.50: {15:0.46, 20:0.48, 25:0.49, 30:0.50, 35:0.50, 40:0.51},
+      0.75: {15:0.54, 20:0.56, 25:0.57, 30:0.59, 35:0.59, 40:0.60},
+      1.00: {15:0.60, 20:0.62, 25:0.64, 30:0.66, 35:0.67, 40:0.68},
+      1.25: {15:0.64, 20:0.67, 25:0.70, 30:0.71, 35:0.73, 40:0.74},
+      1.50: {15:0.68, 20:0.72, 25:0.74, 30:0.76, 35:0.78, 40:0.79},
+      1.75: {15:0.71, 20:0.75, 25:0.78, 30:0.80, 35:0.82, 40:0.84},
+      2.00: {15:0.71, 20:0.79, 25:0.82, 30:0.84, 35:0.86, 40:0.88},
+      2.25: {15:0.71, 20:0.81, 25:0.85, 30:0.88, 35:0.90, 40:0.92},
+      2.50: {15:0.71, 20:0.82, 25:0.88, 30:0.91, 35:0.93, 40:0.95},
+      2.75: {15:0.71, 20:0.82, 25:0.90, 30:0.94, 35:0.96, 40:0.98},
+      3.00: {15:0.71, 20:0.82, 25:0.92, 30:0.96, 35:0.99, 40:1.01}
+    };
+
+    // Find bounding pt keys
+    let ptLow = ptKeys[0];
+    let ptHigh = ptKeys[ptKeys.length - 1];
+    if (pt <= ptLow) {
+      ptLow = ptKeys[0];
+      ptHigh = ptKeys[0];
+    } else if (pt >= ptHigh) {
+      ptLow = ptHigh;
+    } else {
+      for (let i = 0; i < ptKeys.length - 1; i++) {
+        if (pt >= ptKeys[i] && pt <= ptKeys[i+1]) {
+          ptLow = ptKeys[i];
+          ptHigh = ptKeys[i+1];
+          break;
+        }
+      }
+    }
+
+    // Find bounding grade keys
+    let gLow = grades[0];
+    let gHigh = grades[grades.length - 1];
+    const targetGrade = Math.min(Math.max(fck, 15), 40); // cap grade between M15 and M40
+    for (let i = 0; i < grades.length - 1; i++) {
+      if (targetGrade >= grades[i] && targetGrade <= grades[i+1]) {
+        gLow = grades[i];
+        gHigh = grades[i+1];
+        break;
+      }
+    }
+
+    // Bilinear interpolation
+    const q11 = table[ptLow][gLow];
+    const q12 = table[ptLow][gHigh];
+    const q21 = table[ptHigh][gLow];
+    const q22 = table[ptHigh][gHigh];
+
+    const ptFactor = ptLow === ptHigh ? 0 : (pt - ptLow) / (ptHigh - ptLow);
+    const gFactor = gLow === gHigh ? 0 : (targetGrade - gLow) / (gHigh - gLow);
+
+    const r1 = q11 + gFactor * (q12 - q11);
+    const r2 = q21 + gFactor * (q22 - q21);
+    
+    return r1 + ptFactor * (r2 - r1);
+  }
+
   solve() {
-    // Read parameters
     const b = parseFloat(this.inputWidth.value) || 1300;
     const D = parseFloat(this.inputDepth.value) || 1300;
     const fck = parseFloat(this.inputConcrete.value) || 40;
@@ -91,32 +155,28 @@ export class BeamSolver {
     const nbTop = parseInt(this.inputNbTop.value) || 22;
     const diaTop = parseFloat(this.inputDiaTop.value) || 32;
     
-    const Msag = parseFloat(this.inputMsag.value) || 3508; // kNm
-    const Mhog = parseFloat(this.inputMhog.value) || 3398; // kNm
-    const V = parseFloat(this.inputShear.value) || 2676;     // kN
+    const Msag = parseFloat(this.inputMsag.value) || 3508;
+    const Mhog = parseFloat(this.inputMhog.value) || 3398;
+    const V = parseFloat(this.inputShear.value) || 2676;
     
-    const Cnom = 50; // mm cover
-    const ds = 12;   // stirrup dia mm
+    const Cnom = 50;
+    const ds = 12;
     
-    // Effective depth d
-    // Assume 2 layers of reinforcement (like in the Mathcad transverse sheet)
-    const d = D - Cnom - ds - diaBot - diaBot / 2; // e.g. 1300 - 50 - 12 - 32 - 16 = 1190 mm
-    const dprime = Cnom + ds + diaTop / 2; // compression cover
+    const d = D - Cnom - ds - diaBot - diaBot / 2;
+    const dprime = Cnom + ds + diaTop / 2;
     
-    // Limiting neutral axis ratio
-    const xu_d_max = fy === 500 ? 0.46 : 0.48;
-    const Mulim = 0.36 * xu_d_max * (1 - 0.42 * xu_d_max) * b * d * d * fck * 1e-6; // kNm
+    // Limiting neutral axis ratio under IS 456 Cl. 38.1
+    const xu_d_max = fy === 500 ? 0.46 : (fy === 415 ? 0.48 : 0.53);
+    const Mulim = 0.36 * xu_d_max * (1 - 0.42 * xu_d_max) * b * d * d * fck * 1e-6;
     
     // Calculate required tension steel for Sagging (at Bottom)
     let Ast_sag_req = 0;
     if (Msag > Mulim) {
-      // Doubly reinforced
       const Ast1 = (0.36 * xu_d_max * fck * b * d) / (0.87 * fy);
       const Mu2 = Msag - Mulim;
       const Ast2 = (Mu2 * 1e6) / (0.87 * fy * (d - dprime));
       Ast_sag_req = Ast1 + Ast2;
     } else {
-      // Singly reinforced solving quadratic
       Ast_sag_req = (fck / fy) * (b * d / 2) * (1 - Math.sqrt(1 - (4.6 * Msag * 1e6) / (fck * b * d * d)));
     }
     
@@ -135,15 +195,20 @@ export class BeamSolver {
     const Ast_sag_prov = nbBot * (Math.PI * diaBot * diaBot) / 4;
     const Ast_hog_prov = nbTop * (Math.PI * diaTop * diaTop) / 4;
     
+    // Minimum reinforcement check (Cl. 26.5.1.1)
+    const Ast_min = (0.85 * b * d) / fy;
+    const Ast_sag_final_req = Math.max(Ast_sag_req, Ast_min);
+    const Ast_hog_final_req = Math.max(Ast_hog_req, Ast_min);
+    
     // Update labels
-    this.astSagReq.textContent = `${Ast_sag_req.toFixed(0)} mm²`;
+    this.astSagReq.textContent = `${Ast_sag_final_req.toFixed(0)} mm²`;
     this.astSagProv.textContent = `${Ast_sag_prov.toFixed(0)} mm²`;
     
-    this.astHogReq.textContent = `${Ast_hog_req.toFixed(0)} mm²`;
+    this.astHogReq.textContent = `${Ast_hog_final_req.toFixed(0)} mm²`;
     this.astHogProv.textContent = `${Ast_hog_prov.toFixed(0)} mm²`;
     
     // Pass/Fail status
-    if (Ast_sag_prov >= Ast_sag_req) {
+    if (Ast_sag_prov >= Ast_sag_final_req) {
       this.chkSag.className = 'badge-ok';
       this.chkSag.textContent = 'O.K.';
     } else {
@@ -151,7 +216,7 @@ export class BeamSolver {
       this.chkSag.textContent = 'REBAR FAIL';
     }
     
-    if (Ast_hog_prov >= Ast_hog_req) {
+    if (Ast_hog_prov >= Ast_hog_final_req) {
       this.chkHog.className = 'badge-ok';
       this.chkHog.textContent = 'O.K.';
     } else {
@@ -159,25 +224,24 @@ export class BeamSolver {
       this.chkHog.textContent = 'REBAR FAIL';
     }
     
-    // SHEAR CHECK & CAPACITY
+    // SHEAR CHECK & CAPACITY (IS 456 Cl. 40)
     const nlegs = 6;
     const spacing = 150; // mm
-    const asv = nlegs * (Math.PI * ds * ds) / 4; // Area of stirrup legs mm^2
+    const asv = nlegs * (Math.PI * ds * ds) / 4;
     
     // Nominal shear stress
-    const tau_v = (V * 1e3) / (b * d); // MPa
+    const tau_v = (V * 1e3) / (b * d);
     
-    // Design concrete shear stress (approximated from Pt_prov)
+    // Design concrete shear stress from Table 19 interpolator
     const Pt_prov = (100 * Ast_sag_prov) / (b * d);
-    const beta = Math.max(1.0, (0.116 * fck * b * d) / (100 * Ast_sag_prov));
-    const tau_c = (0.85 * Math.sqrt(0.8 * fck) * Math.sqrt(1 + 5 * beta) - 1) / (6 * beta); // MPa
+    const tau_c = this.getTauC(Pt_prov, fck);
     
     // Concrete capacity
-    const V_Rd1 = tau_c * b * d * 1e-3; // kN
+    const V_Rd1 = tau_c * b * d * 1e-3;
     
     // Stirrup capacity
-    const V_Rs = (0.87 * fy * asv * d) / spacing * 1e-3; // kN
-    const V_total_capacity = V_Rd1 + V_Rs; // kN
+    const V_Rs = (0.87 * fy * asv * d) / spacing * 1e-3;
+    const V_total_capacity = V_Rd1 + V_Rs;
     
     this.shearReq.textContent = `Capacity: ${V_total_capacity.toFixed(0)} kN`;
     this.shearProv.textContent = `Applied: ${V.toFixed(0)} kN`;
@@ -208,7 +272,6 @@ export class BeamSolver {
     
     ctx.clearRect(0, 0, w, h);
     
-    // Drawing a longitudinal CAD-style reinforcement blueprint of the beam
     const marginL = 60;
     const marginR = 60;
     const marginT = 40;
@@ -226,7 +289,7 @@ export class BeamSolver {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     }
     
-    // Concrete Outline (Dashed)
+    // Concrete Outline
     ctx.fillStyle = 'rgba(148, 163, 184, 0.05)';
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 2.5;
@@ -235,7 +298,7 @@ export class BeamSolver {
     ctx.fill();
     ctx.stroke();
     
-    // Support Columns representation (sides)
+    // Columns representation
     ctx.fillStyle = 'rgba(71, 85, 105, 0.2)';
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
     ctx.lineWidth = 1;
@@ -244,7 +307,7 @@ export class BeamSolver {
     ctx.fillRect(marginL + beamW, marginT + beamH, 30, 30);
     ctx.strokeRect(marginL + beamW, marginT + beamH, 30, 30);
     
-    // Draw top reinforcement bars (hogging steel)
+    // Draw top bars
     ctx.strokeStyle = '#00f0ff';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -252,7 +315,6 @@ export class BeamSolver {
     ctx.lineTo(marginL + beamW - 10, marginT + 15);
     ctx.stroke();
     
-    // L-bends at the ends of top bars
     ctx.beginPath();
     ctx.moveTo(marginL + 10, marginT + 15);
     ctx.lineTo(marginL + 10, marginT + 40);
@@ -260,7 +322,7 @@ export class BeamSolver {
     ctx.lineTo(marginL + beamW - 10, marginT + 40);
     ctx.stroke();
     
-    // Draw bottom reinforcement bars (sagging steel)
+    // Draw bottom bars
     ctx.strokeStyle = '#00e676';
     ctx.lineWidth = 3.5;
     ctx.beginPath();
@@ -268,7 +330,6 @@ export class BeamSolver {
     ctx.lineTo(marginL + beamW - 10, marginT + beamH - 15);
     ctx.stroke();
     
-    // L-bends at the ends of bottom bars
     ctx.beginPath();
     ctx.moveTo(marginL + 10, marginT + beamH - 15);
     ctx.lineTo(marginL + 10, marginT + beamH - 40);
@@ -276,7 +337,7 @@ export class BeamSolver {
     ctx.lineTo(marginL + beamW - 10, marginT + beamH - 40);
     ctx.stroke();
     
-    // Draw stirrups links (transverse steel hooks)
+    // Draw links
     ctx.strokeStyle = '#ff6b00';
     ctx.lineWidth = 1.2;
     const numStirrups = 25;
@@ -285,7 +346,6 @@ export class BeamSolver {
     for (let i = 0; i < numStirrups; i++) {
       const sx = marginL + i * sSpacing;
       ctx.beginPath();
-      // Rectangular loop
       ctx.rect(sx - 2, marginT + 10, 4, beamH - 20);
       ctx.stroke();
     }

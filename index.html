@@ -487,169 +487,298 @@
 
         <!-- PILE FOUNDATION TAB -->
         <section id="pile" class="page-section">
+          <!-- Design Mode Selector -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: rgba(13, 21, 39, 0.6); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color-soft);">
+            <div style="font-size: 16px; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M8 6h8M6 11h12M4 16h16"></path></svg>
+              Pile Design Mode:
+            </div>
+            <div class="radio-group" style="width: auto;">
+              <input type="radio" id="mode-pile-geo" name="pile-mode" value="geotechnical" checked>
+              <label for="mode-pile-geo" class="radio-label" style="padding: 6px 16px; font-weight:600;">Geotechnical Soil (IS 2911)</label>
+              
+              <input type="radio" id="mode-pile-struct" name="pile-mode" value="structural">
+              <label for="mode-pile-struct" class="radio-label" style="padding: 6px 16px; font-weight:600;">Structural Concrete (IS 456)</label>
+            </div>
+          </div>
+
           <div class="calculator-container" style="grid-template-columns: 460px 1fr;">
+            <!-- CONTROL PANEL -->
             <div class="control-panel">
-              <h3 class="panel-title">RC Pile Geometry & Rebar Data</h3>
-              
-              <div class="input-group">
-                <label class="input-label">Pile Dimensions</label>
-                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                  <div style="flex: 1;">
-                    <span style="font-size: 10px; color: var(--text-secondary);">Diameter D (mm)</span>
-                    <input type="number" id="input-pile-dia" value="1400">
+              <!-- GEOTECHNICAL INPUTS -->
+              <div id="pile-geo-inputs">
+                <h3 class="panel-title">Soil & Geotechnical Data</h3>
+                
+                <div class="input-group">
+                  <div class="input-label">
+                    <span>Pile Diameter (d)</span>
+                    <span class="input-val" id="val-pile-dia">1000 mm</span>
                   </div>
-                  <div style="flex: 1;">
-                    <span style="font-size: 10px; color: var(--text-secondary);">Length Ls (m)</span>
-                    <input type="number" id="input-pile-len" value="14.0">
-                  </div>
+                  <input type="range" id="input-pile-dia" min="300" max="1500" step="50" value="1000">
                 </div>
-                <div style="display: flex; gap: 8px;">
-                  <div style="flex: 1;">
-                    <span style="font-size: 10px; color: var(--text-secondary);">Clear Cover Cc (mm)</span>
-                    <input type="number" id="input-pile-cover" value="75">
+
+                <div class="input-group">
+                  <div class="input-label">
+                    <span>Pile Length (L)</span>
+                    <span class="input-val" id="val-pile-len">18.5 m</span>
                   </div>
-                  <div style="flex: 1;">
-                    <span style="font-size: 10px; color: var(--text-secondary);">Effective K_eff</span>
-                    <input type="number" id="input-pile-keff" value="1.2" step="0.1">
+                  <input type="range" id="input-pile-len" min="5" max="30" step="0.5" value="18.5">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label">
+                    <span>Soil Cohesion (c)</span>
+                    <span class="input-val" id="val-pile-c">40 kPa</span>
                   </div>
+                  <input type="range" id="input-pile-c" min="10" max="150" step="5" value="40">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label">
+                    <span>Angle of Friction (φ)</span>
+                    <span class="input-val" id="val-pile-phi">28 °</span>
+                  </div>
+                  <input type="range" id="input-pile-phi" min="0" max="45" step="1" value="28">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label">
+                    <span>Applied Axial Load</span>
+                    <span class="input-val" id="val-pile-load">450 kN</span>
+                  </div>
+                  <input type="range" id="input-pile-load" min="50" max="2500" step="25" value="450">
+                </div>
+
+                <div class="input-group">
+                  <label class="input-label">Soil Stratum Model</label>
+                  <select id="input-pile-soiltype">
+                    <option value="clayey" selected>Uniform Clay (IS 2911 Alpha-method)</option>
+                    <option value="sandy">Uniform Sand (IS 2911 Beta-method)</option>
+                    <option value="layered">Layered Clay-Sand Stratum</option>
+                  </select>
                 </div>
               </div>
 
-              <div class="input-group">
-                <label class="input-label">Main Longitudinal Rebar</label>
-                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                  <div style="flex: 1;">
-                    <span style="font-size: 10px; color: var(--text-secondary);">Total Main Bars</span>
-                    <input type="number" id="input-pile-nb" value="66">
+              <!-- STRUCTURAL INPUTS -->
+              <div id="pile-struct-inputs" style="display: none;">
+                <h3 class="panel-title">Circular RC Section Properties</h3>
+                
+                <div class="input-group">
+                  <label class="input-label">Geometry Details</label>
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Diameter D (mm)</span>
+                      <input type="number" id="input-pile-dia-struct" value="1400">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Length Ls (m)</span>
+                      <input type="number" id="input-pile-len-struct" value="14.0">
+                    </div>
                   </div>
-                  <div style="flex: 1;">
-                    <span style="font-size: 10px; color: var(--text-secondary);">Bar Diameter (mm)</span>
-                    <input type="number" id="input-pile-dia-main" value="32">
-                  </div>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                  <div style="flex: 1;">
-                    <span style="font-size: 10px; color: var(--text-secondary);">Bars per Bundle</span>
-                    <input type="number" id="input-pile-npb" value="3">
-                  </div>
-                  <div style="flex: 1;">
-                    <span style="font-size: 10px; color: var(--text-secondary);">Concrete Grade</span>
-                    <select id="input-pile-concrete-grade">
-                      <option value="30">M30</option>
-                      <option value="35">M35</option>
-                      <option value="40" selected>M40</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <h4 style="font-size: 13px; margin: 15px 0 8px; color: var(--accent-orange);">STAAD Design Load Cases (3 Cases)</h4>
-              
-              <div class="cases-grid">
-                <div class="case-col" style="border-color: rgba(255, 107, 0, 0.2);">
-                  <div class="case-col-title" style="color: var(--accent-orange); border-bottom-color: rgba(255, 107, 0, 0.1);">Case 1 (Axial)</div>
-                  <div class="case-input">
-                    <label>Factored Pu (kN)</label>
-                    <input type="number" id="pile-c1-pu" value="5995">
-                  </div>
-                  <div class="case-input">
-                    <label>Factored My (kNm)</label>
-                    <input type="number" id="pile-c1-my" value="6448">
-                  </div>
-                  <div class="case-input">
-                    <label>Factored Mz (kNm)</label>
-                    <input type="number" id="pile-c1-mz" value="28">
-                  </div>
-                  <div class="case-input">
-                    <label>Factored Shear V (kN)</label>
-                    <input type="number" id="pile-c1-v" value="927">
+                  <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Clear Cover Cc (mm)</span>
+                      <input type="number" id="input-pile-cover" value="75">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Effective K_eff</span>
+                      <input type="number" id="input-pile-keff" value="1.2" step="0.1">
+                    </div>
                   </div>
                 </div>
 
-                <div class="case-col" style="border-color: rgba(255, 107, 0, 0.2);">
-                  <div class="case-col-title" style="color: var(--accent-orange); border-bottom-color: rgba(255, 107, 0, 0.1);">Case 2 (My)</div>
-                  <div class="case-input">
-                    <label>Factored Pu (kN)</label>
-                    <input type="number" id="pile-c2-pu" value="2823">
+                <div class="input-group">
+                  <label class="input-label">Reinforcement Cage</label>
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Total Main Bars</span>
+                      <input type="number" id="input-pile-nb" value="66">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Bar Diameter (mm)</span>
+                      <input type="number" id="input-pile-dia-main" value="32">
+                    </div>
                   </div>
-                  <div class="case-input">
-                    <label>Factored My (kNm)</label>
-                    <input type="number" id="pile-c2-my" value="6749">
-                  </div>
-                  <div class="case-input">
-                    <label>Factored Mz (kNm)</label>
-                    <input type="number" id="pile-c2-mz" value="1">
-                  </div>
-                  <div class="case-input">
-                    <label>Factored Shear V (kN)</label>
-                    <input type="number" id="pile-c2-v" value="928">
+                  <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Bars per Bundle</span>
+                      <input type="number" id="input-pile-npb" value="3">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Concrete Grade</span>
+                      <select id="input-pile-concrete-grade">
+                        <option value="30">M30</option>
+                        <option value="35">M35</option>
+                        <option value="40" selected>M40</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                <div class="case-col" style="border-color: rgba(255, 107, 0, 0.2);">
-                  <div class="case-col-title" style="color: var(--accent-orange); border-bottom-color: rgba(255, 107, 0, 0.1);">Case 3 (Mz)</div>
-                  <div class="case-input">
-                    <label>Factored Pu (kN)</label>
-                    <input type="number" id="pile-c3-pu" value="3330">
+                <h4 style="font-size: 13px; margin: 15px 0 8px; color: var(--accent-orange);">STAAD Design Load Cases (3 Cases)</h4>
+                
+                <div class="cases-grid">
+                  <div class="case-col" style="border-color: rgba(255, 107, 0, 0.2);">
+                    <div class="case-col-title" style="color: var(--accent-orange); border-bottom-color: rgba(255, 107, 0, 0.1);">Case 1 (Axial)</div>
+                    <div class="case-input">
+                      <label>Factored Pu (kN)</label>
+                      <input type="number" id="pile-c1-pu" value="5995">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored My (kNm)</label>
+                      <input type="number" id="pile-c1-my" value="6448">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored Mz (kNm)</label>
+                      <input type="number" id="pile-c1-mz" value="28">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored Shear V (kN)</label>
+                      <input type="number" id="pile-c1-v" value="927">
+                    </div>
                   </div>
-                  <div class="case-input">
-                    <label>Factored My (kNm)</label>
-                    <input type="number" id="pile-c3-my" value="364">
+
+                  <div class="case-col" style="border-color: rgba(255, 107, 0, 0.2);">
+                    <div class="case-col-title" style="color: var(--accent-orange); border-bottom-color: rgba(255, 107, 0, 0.1);">Case 2 (My)</div>
+                    <div class="case-input">
+                      <label>Factored Pu (kN)</label>
+                      <input type="number" id="pile-c2-pu" value="2823">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored My (kNm)</label>
+                      <input type="number" id="pile-c2-my" value="6749">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored Mz (kNm)</label>
+                      <input type="number" id="pile-c2-mz" value="1">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored Shear V (kN)</label>
+                      <input type="number" id="pile-c2-v" value="928">
+                    </div>
                   </div>
-                  <div class="case-input">
-                    <label>Factored Mz (kNm)</label>
-                    <input type="number" id="pile-c3-mz" value="1282">
-                  </div>
-                  <div class="case-input">
-                    <label>Factored Shear V (kN)</label>
-                    <input type="number" id="pile-c3-v" value="927">
+
+                  <div class="case-col" style="border-color: rgba(255, 107, 0, 0.2);">
+                    <div class="case-col-title" style="color: var(--accent-orange); border-bottom-color: rgba(255, 107, 0, 0.1);">Case 3 (Mz)</div>
+                    <div class="case-input">
+                      <label>Factored Pu (kN)</label>
+                      <input type="number" id="pile-c3-pu" value="3330">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored My (kNm)</label>
+                      <input type="number" id="pile-c3-my" value="364">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored Mz (kNm)</label>
+                      <input type="number" id="pile-c3-mz" value="1282">
+                    </div>
+                    <div class="case-input">
+                      <label>Factored Shear V (kN)</label>
+                      <input type="number" id="pile-c3-v" value="927">
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
+            <!-- DISPLAY PANEL -->
             <div class="display-panel">
-              <h3 class="panel-title">Pile Multi-Case Envelope Check</h3>
-              
-              <div class="table-wrapper">
-                <table class="calc-table">
-                  <thead>
-                    <tr>
-                      <th>Parameters</th>
-                      <th>Case 1 (Axial)</th>
-                      <th>Case 2 (My)</th>
-                      <th>Case 3 (Mz)</th>
-                      <th>Envelope Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Interaction Ratio (IR)</td>
-                      <td id="res-pile-c1-ir">0.70</td>
-                      <td id="res-pile-c2-ir">0.68</td>
-                      <td id="res-pile-c3-ir">0.40</td>
-                      <td rowspan="3" style="vertical-align: middle; text-align: center; border-left: 1px solid var(--border-color-soft);">
-                        <div id="res-pile-status" class="badge-ok">GOVERNING CASE:<br><span id="res-pile-worst-case" style="font-weight:700;">CASE 1</span><br><br><span id="res-pile-final-check" style="font-size:12px;">SAFE (PASS)</span></div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Crack Width (mm)</td>
-                      <td id="res-pile-c1-cw">0.26</td>
-                      <td id="res-pile-c2-cw">0.24</td>
-                      <td id="res-pile-c3-cw">0.10</td>
-                    </tr>
-                    <tr>
-                      <td>Shear Unity check</td>
-                      <td id="res-pile-c1-sv">0.70</td>
-                      <td id="res-pile-c2-sv">0.70</td>
-                      <td id="res-pile-c3-sv">0.70</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <!-- GEOTECHNICAL OUTPUTS -->
+              <div id="pile-geo-outputs" style="display: flex; flex-direction: column; gap: 20px; flex-grow: 1;">
+                <h3 class="panel-title">Soil Stratum bearing Capacity (IS 2911:2010)</h3>
+                
+                <div class="pile-animation-grid">
+                  <div class="canvas-wrapper" style="height: 380px;">
+                    <canvas id="pileCanvas" class="canvas-element"></canvas>
+                  </div>
+                  
+                  <div style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div class="table-wrapper">
+                      <table class="calc-table">
+                        <thead>
+                          <tr>
+                            <th>Component</th>
+                            <th>Formula Output</th>
+                            <th>Capacity (kN)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>End Bearing Capacity (Q<sub>b</sub>)</td>
+                            <td>q<sub>p</sub> × A<sub>p</sub></td>
+                            <td id="res-pile-qb" class="input-val">282.7 kN</td>
+                          </tr>
+                          <tr>
+                            <td>Skin Friction (Q<sub>s</sub>)</td>
+                            <td>Σ f<sub>s</sub> × A<sub>s</sub></td>
+                            <td id="res-pile-qs" class="input-val">1278.6 kN</td>
+                          </tr>
+                          <tr class="total-row">
+                            <td>Ultimate Capacity (Q<sub>u</sub>)</td>
+                            <td>Q<sub>b</sub> + Q<sub>s</sub></td>
+                            <td id="res-pile-qu">1561.4 kN</td>
+                          </tr>
+                          <tr class="total-row" style="background: rgba(0, 230, 118, 0.05);">
+                            <td>Allowable Load (Q<sub>all</sub>)</td>
+                            <td>Q<sub>u</sub> / FOS (2.5)</td>
+                            <td id="res-pile-qall" style="color: var(--accent-green) !important;">624.5 kN</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div id="pile-geo-status-banner" class="alert-banner alert-success" style="margin-top: 15px;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                      <span>Safe: Applied Load is within geotechnical capacity.</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div class="canvas-wrapper" style="height: 300px;">
-                <canvas id="pileCanvas" class="canvas-element"></canvas>
+              <!-- STRUCTURAL OUTPUTS -->
+              <div id="pile-struct-outputs" style="display: none; flex-direction: column; gap: 20px; flex-grow: 1;">
+                <h3 class="panel-title">Pile Multi-Case Structural Checking (IS 456 & SP 16)</h3>
+                
+                <div class="table-wrapper">
+                  <table class="calc-table">
+                    <thead>
+                      <tr>
+                        <th>Parameters</th>
+                        <th>Case 1 (Axial)</th>
+                        <th>Case 2 (My)</th>
+                        <th>Case 3 (Mz)</th>
+                        <th>Envelope Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Interaction Ratio (IR)</td>
+                        <td id="res-pile-c1-ir">0.70</td>
+                        <td id="res-pile-c2-ir">0.68</td>
+                        <td id="res-pile-c3-ir">0.40</td>
+                        <td rowspan="3" style="vertical-align: middle; text-align: center; border-left: 1px solid var(--border-color-soft);">
+                          <div id="res-pile-status" class="badge-ok">GOVERNING CASE:<br><span id="res-pile-worst-case" style="font-weight:700;">CASE 1</span><br><br><span id="res-pile-final-check" style="font-size:12px;">SAFE (PASS)</span></div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Crack Width (mm)</td>
+                        <td id="res-pile-c1-cw">0.26</td>
+                        <td id="res-pile-c2-cw">0.24</td>
+                        <td id="res-pile-c3-cw">0.10</td>
+                      </tr>
+                      <tr>
+                        <td>Shear Unity check</td>
+                        <td id="res-pile-c1-sv">0.70</td>
+                        <td id="res-pile-c2-sv">0.70</td>
+                        <td id="res-pile-c3-sv">0.70</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="canvas-wrapper" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #070b13;">
+                  <canvas id="pileStructCanvas" class="canvas-element" style="position: absolute; top:0; left:0; width:100%; height:100%;"></canvas>
+                </div>
               </div>
             </div>
           </div>

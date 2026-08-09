@@ -92,9 +92,15 @@ export class ColumnSolver {
     const beff = b - Cc - ds - 0.5 * dia;
     
     const Nuz = (0.45 * fck * Ac + 0.75 * fy * As) * 1e-3; // kN
-    
-    // Balanced axial load check (Table 60 representation / Varghese)
     const Nbal = 0.254 * fck * b * heff * 1e-3; // kN
+    
+    // Slenderness checking (IS 456 Cl. 25.3)
+    const Ley = 1.2 * L; // m
+    const Lez = 1.2 * L; // m
+    
+    const slendernessY = (Ley * 1000) / b;
+    const slendernessZ = (Lez * 1000) / h;
+    const isSlenderLimitExceeded = (slendernessY >= 60) || (slendernessZ >= 60);
     
     const results = [];
     
@@ -104,13 +110,9 @@ export class ColumnSolver {
       const Mz = parseFloat(c.mz.value) || 0; // kNm
       const V = parseFloat(c.v.value) || 0;   // kN
       
-      // Slenderness checking (Major/Minor)
-      const Ley = 1.2 * L; // m
-      const Lez = 1.2 * L; // m
-      
-      // Additional Eccentricity
-      const ez_min = L * 1000 / 500 + h / 30; // mm
-      const ey_min = L * 1000 / 500 + b / 30; // mm
+      // Additional Eccentricity (IS 456 Cl. 39.2)
+      const ez_min = Math.max(L * 1000 / 500 + h / 30, 20); // mm
+      const ey_min = Math.max(L * 1000 / 500 + b / 30, 20); // mm
       
       const M_adz = Pu * ez_min * 1e-3; // kNm
       const M_ady = Pu * ey_min * 1e-3; // kNm
@@ -125,11 +127,11 @@ export class ColumnSolver {
       const M_addz = Pu * beta_az * kz * b * 1e-3; // kNm
       const M_addy = Pu * beta_ay * ky * h * 1e-3; // kNm
       
-      // Combined Moment Envelope (a to d)
+      // Combined Moment Envelope
       const M_az = Math.max(Mz, M_addz, M_adz);
       const M_ay = Math.max(My, M_addy, M_ady);
       
-      // Uniaxial capacity about major and minor axis (SP 16 Chart 44/49 approx)
+      // Uniaxial capacity about major and minor axis
       const Msp16z = 0.05 * fck * b * h * h * 1e-6; // kNm
       const Msp16y = 0.05 * fck * b * b * h * 1e-6; // kNm
       
@@ -140,16 +142,13 @@ export class ColumnSolver {
       
       const IR = Math.pow(M_az / Msp16z, alpha_n) + Math.pow(M_ay / Msp16y, alpha_n);
       
-      // Serviceability Crack Width (Annex F)
-      // Very small for rectangular columns under standard compression.
-      // Calibrated from Mathcad dump value of around 0.0026mm to 0.005mm.
+      // Serviceability Crack Width
       let crackWidth = 0.002 + 0.003 * (M_ay / Msp16y);
       
       // Shear check
       const tau_v = (V * 1e3) / (b * heff); // MPa
-      const tau_c = 0.47; // standard concrete shear strength MPa
+      const tau_c = 0.47;
       
-      // Compression multiplication factor delta
       const delta_m = Math.min(1.5, 1.0 + (3 * Pu * 1e3) / (Ag * fck));
       const tau_c1 = delta_m * tau_c;
       const shearUnity = tau_v / tau_c1;
@@ -189,12 +188,16 @@ export class ColumnSolver {
     this.worstCaseLbl.textContent = worstCaseName;
     
     const worstRes = results[worstIdx];
-    const isSafe = (worstRes.ir <= 1.0) && (worstRes.cw <= 0.2) && (worstRes.sv <= 1.0);
+    const isSafe = (worstRes.ir <= 1.0) && (worstRes.cw <= 0.2) && (worstRes.sv <= 1.0) && !isSlenderLimitExceeded;
     
     if (isSafe) {
       this.statusBanner.className = 'badge-ok';
       this.finalCheckLbl.textContent = 'SAFE (PASS)';
       this.finalCheckLbl.style.color = 'var(--accent-green)';
+    } else if (isSlenderLimitExceeded) {
+      this.statusBanner.className = 'badge-worst';
+      this.finalCheckLbl.textContent = 'SLENDER > 60 (FAIL)';
+      this.finalCheckLbl.style.color = '#ef4444';
     } else {
       this.statusBanner.className = 'badge-worst';
       this.finalCheckLbl.textContent = 'NOT O.K. (REVISE)';
@@ -249,28 +252,21 @@ export class ColumnSolver {
               fill="none" stroke="#ff6b00" stroke-width="2.5" rx="4" />
     `;
     
-    // Distribute nb rebars around the perimeter of the tie box
     const startX = colX + covScaled;
     const startY = colY + covScaled;
     const innerW = colW - covScaled * 2;
     const innerH = colH - covScaled * 2;
     
     const rRadius = Math.max((dia / 2) * scale, 3.5);
-    
-    // General perimeter distribution algorithm
-    // We have 4 corners, and we distribute the remaining nb - 4 rebars on the four edges
     const rebarCoords = [];
     
     if (nb >= 4) {
-      // 4 Corners
       rebarCoords.push({ x: startX, y: startY });
       rebarCoords.push({ x: startX + innerW, y: startY });
       rebarCoords.push({ x: startX, y: startY + innerH });
       rebarCoords.push({ x: startX + innerW, y: startY + innerH });
       
       const remaining = nb - 4;
-      // Distribute remaining evenly along sides: 2 horizontal sides, 2 vertical sides
-      // Let's divide based on aspect ratio
       const perimeterRatio = innerW / (innerW + innerH);
       const remH = Math.round(remaining * perimeterRatio / 2) * 2;
       const remV = remaining - remH;
@@ -278,7 +274,6 @@ export class ColumnSolver {
       const barsTopBottom = remH / 2;
       const barsLeftRight = remV / 2;
       
-      // Top & Bottom edges
       if (barsTopBottom > 0) {
         const stepW = innerW / (barsTopBottom + 1);
         for (let i = 1; i <= barsTopBottom; i++) {
@@ -287,7 +282,6 @@ export class ColumnSolver {
         }
       }
       
-      // Left & Right edges
       if (barsLeftRight > 0) {
         const stepH = innerH / (barsLeftRight + 1);
         for (let i = 1; i <= barsLeftRight; i++) {
@@ -297,7 +291,6 @@ export class ColumnSolver {
       }
     }
     
-    // Draw the rebar dots
     rebarCoords.forEach(pt => {
       svgHtml += `
         <circle cx="${pt.x}" cy="${pt.y}" r="${rRadius}" fill="#00e676" stroke="#00b0ff" stroke-width="1" />
@@ -305,7 +298,6 @@ export class ColumnSolver {
       `;
     });
     
-    // Extension line dimension annotations (CAD style)
     const dimOffset = 25;
     svgHtml += `
       <g stroke="#475569" stroke-width="1">
