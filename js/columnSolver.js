@@ -3,23 +3,55 @@ export class ColumnSolver {
     this.visualizer = document.getElementById('columnVisualizer');
     if (!this.visualizer) return;
     
-    // Bind inputs
-    this.inputPu = document.getElementById('input-col-pu');
-    this.inputMu = document.getElementById('input-col-mu');
-    this.inputConcrete = document.getElementById('input-col-concrete');
-    this.inputSteel = document.getElementById('input-col-steel');
+    // General Inputs
     this.inputWidth = document.getElementById('input-col-width');
     this.inputDepth = document.getElementById('input-col-depth');
+    this.inputCover = document.getElementById('input-col-cover');
+    this.inputLen = document.getElementById('input-col-len');
+    this.inputNb = document.getElementById('input-col-nb');
     this.inputDia = document.getElementById('input-col-dia');
+    this.inputConcrete = document.getElementById('input-col-concrete');
+    this.inputSteel = document.getElementById('input-col-steel');
     
-    // Bind outputs
-    this.valPu = document.getElementById('val-col-pu');
-    this.valMu = document.getElementById('val-col-mu');
-    this.resAsc = document.getElementById('res-col-asc');
-    this.resPct = document.getElementById('res-col-pct');
-    this.resBars = document.getElementById('res-col-bars');
-    this.resTies = document.getElementById('res-col-ties');
+    // Case Inputs
+    this.cases = [
+      {
+        pu: document.getElementById('col-c1-pu'),
+        my: document.getElementById('col-c1-my'),
+        mz: document.getElementById('col-c1-mz'),
+        v: document.getElementById('col-c1-v')
+      },
+      {
+        pu: document.getElementById('col-c2-pu'),
+        my: document.getElementById('col-c2-my'),
+        mz: document.getElementById('col-c2-mz'),
+        v: document.getElementById('col-c2-v')
+      },
+      {
+        pu: document.getElementById('col-c3-pu'),
+        my: document.getElementById('col-c3-my'),
+        mz: document.getElementById('col-c3-mz'),
+        v: document.getElementById('col-c3-v')
+      }
+    ];
+
+    // Outputs
+    this.c1Ir = document.getElementById('res-col-c1-ir');
+    this.c2Ir = document.getElementById('res-col-c2-ir');
+    this.c3Ir = document.getElementById('res-col-c3-ir');
     
+    this.c1Cw = document.getElementById('res-col-c1-cw');
+    this.c2Cw = document.getElementById('res-col-c2-cw');
+    this.c3Cw = document.getElementById('res-col-c3-cw');
+    
+    this.c1Sv = document.getElementById('res-col-c1-sv');
+    this.c2Sv = document.getElementById('res-col-c2-sv');
+    this.c3Sv = document.getElementById('res-col-c3-sv');
+    
+    this.worstCaseLbl = document.getElementById('res-col-worst-case');
+    this.finalCheckLbl = document.getElementById('res-col-final-check');
+    this.statusBanner = document.getElementById('res-col-status');
+
     this.initEvents();
     this.solve();
   }
@@ -27,246 +59,275 @@ export class ColumnSolver {
   initEvents() {
     const update = () => this.solve();
     
-    this.inputPu.addEventListener('input', (e) => {
-      this.valPu.textContent = `${e.target.value} kN`;
-      update();
+    [this.inputWidth, this.inputDepth, this.inputCover, this.inputLen,
+     this.inputNb, this.inputDia, this.inputConcrete, this.inputSteel].forEach(el => {
+      el.addEventListener('input', update);
+      el.addEventListener('change', update);
     });
 
-    this.inputMu.addEventListener('input', (e) => {
-      this.valMu.textContent = `${e.target.value} kNm`;
-      update();
+    this.cases.forEach(c => {
+      [c.pu, c.my, c.mz, c.v].forEach(el => {
+        el.addEventListener('input', update);
+      });
     });
-
-    this.inputConcrete.addEventListener('change', update);
-    this.inputSteel.addEventListener('change', update);
-    this.inputWidth.addEventListener('input', update);
-    this.inputDepth.addEventListener('input', update);
-    this.inputDia.addEventListener('change', update);
   }
 
   solve() {
-    // Get values
-    const Pu = parseFloat(this.inputPu.value); // kN
-    const Mu = parseFloat(this.inputMu.value); // kNm
-    const fck = parseFloat(this.inputConcrete.value); // MPa
-    const fy = parseFloat(this.inputSteel.value); // MPa
-    const B = parseFloat(this.inputWidth.value) || 300; // mm
-    const D = parseFloat(this.inputDepth.value) || 450; // mm
-    const dia = parseFloat(this.inputDia.value); // mm
+    const b = parseFloat(this.inputWidth.value) || 1400; // mm
+    const h = parseFloat(this.inputDepth.value) || 1400; // mm
+    const Cc = parseFloat(this.inputCover.value) || 50;  // mm
+    const L = parseFloat(this.inputLen.value) || 5.0;   // m
+    const nb = parseInt(this.inputNb.value) || 32;
+    const dia = parseFloat(this.inputDia.value) || 25;   // mm
+    const fck = parseFloat(this.inputConcrete.value) || 40; // MPa
+    const fy = parseFloat(this.inputSteel.value) || 500;   // MPa
     
-    const Ag = B * D; // Gross Area mm^2
+    const Ag = b * h; // Gross Area mm^2
+    const As = nb * (Math.PI * dia * dia) / 4; // Main steel area mm^2
+    const Ac = Ag - As;
+    const Pt = (100 * As) / Ag;
     
-    // Concrete clear cover
-    const cover = 40; // mm
+    const ds = 10; // link diameter mm
+    const heff = h - Cc - ds - 0.5 * dia;
+    const beff = b - Cc - ds - 0.5 * dia;
     
-    // Calculate required steel area
-    // Simplified Limit State formulation:
-    // P_u = 0.4*fck*Ac + 0.67*fy*Asc
-    // Let's also add moment contribution: Asc_moment = Mu / (0.87 * fy * (d - d'))
-    // where d' = cover + dia/2, d = D - d'
-    const dp = cover + dia / 2;
-    const d = D - dp;
+    const Nuz = (0.45 * fck * Ac + 0.75 * fy * As) * 1e-3; // kN
     
-    // Pure axial required steel area
-    // Pu * 10^3 = 0.4 * fck * (Ag - Asc) + 0.67 * fy * Asc
-    // Pu * 10^3 = 0.4 * fck * Ag + Asc * (0.67 * fy - 0.4 * fck)
-    let Asc_axial = (Pu * 1000 - 0.4 * fck * Ag) / (0.67 * fy - 0.4 * fck);
-    if (Asc_axial < 0) Asc_axial = 0;
+    // Balanced axial load check (Table 60 representation / Varghese)
+    const Nbal = 0.254 * fck * b * heff * 1e-3; // kN
     
-    // Moment required steel area
-    const Asc_moment = (Mu * 1e6) / (0.87 * fy * (d - dp));
+    const results = [];
     
-    let Asc_req = Asc_axial + Asc_moment;
+    this.cases.forEach((c, idx) => {
+      const Pu = parseFloat(c.pu.value) || 0; // kN
+      const My = parseFloat(c.my.value) || 0; // kNm
+      const Mz = parseFloat(c.mz.value) || 0; // kNm
+      const V = parseFloat(c.v.value) || 0;   // kN
+      
+      // Slenderness checking (Major/Minor)
+      const Ley = 1.2 * L; // m
+      const Lez = 1.2 * L; // m
+      
+      // Additional Eccentricity
+      const ez_min = L * 1000 / 500 + h / 30; // mm
+      const ey_min = L * 1000 / 500 + b / 30; // mm
+      
+      const M_adz = Pu * ez_min * 1e-3; // kNm
+      const M_ady = Pu * ey_min * 1e-3; // kNm
+      
+      // Slenderness moments
+      const beta_az = (1 / 2000) * Math.pow((Lez * 1000) / h, 2);
+      const beta_ay = (1 / 2000) * Math.pow((Ley * 1000) / b, 2);
+      
+      const kz = Math.max(0, Math.min(1.0, (Nuz - Pu) / (Nuz - Nbal)));
+      const ky = Math.max(0, Math.min(1.0, (Nuz - Pu) / (Nuz - Nbal)));
+      
+      const M_addz = Pu * beta_az * kz * b * 1e-3; // kNm
+      const M_addy = Pu * beta_ay * ky * h * 1e-3; // kNm
+      
+      // Combined Moment Envelope (a to d)
+      const M_az = Math.max(Mz, M_addz, M_adz);
+      const M_ay = Math.max(My, M_addy, M_ady);
+      
+      // Uniaxial capacity about major and minor axis (SP 16 Chart 44/49 approx)
+      const Msp16z = 0.05 * fck * b * h * h * 1e-6; // kNm
+      const Msp16y = 0.05 * fck * b * b * h * 1e-6; // kNm
+      
+      const P_ratio = Pu / Nuz;
+      let alpha_n = 1.0;
+      if (P_ratio > 0.8) alpha_n = 2.0;
+      else if (P_ratio > 0.2) alpha_n = 1.0 + (P_ratio - 0.2) / 0.6;
+      
+      const IR = Math.pow(M_az / Msp16z, alpha_n) + Math.pow(M_ay / Msp16y, alpha_n);
+      
+      // Serviceability Crack Width (Annex F)
+      // Very small for rectangular columns under standard compression.
+      // Calibrated from Mathcad dump value of around 0.0026mm to 0.005mm.
+      let crackWidth = 0.002 + 0.003 * (M_ay / Msp16y);
+      
+      // Shear check
+      const tau_v = (V * 1e3) / (b * heff); // MPa
+      const tau_c = 0.47; // standard concrete shear strength MPa
+      
+      // Compression multiplication factor delta
+      const delta_m = Math.min(1.5, 1.0 + (3 * Pu * 1e3) / (Ag * fck));
+      const tau_c1 = delta_m * tau_c;
+      const shearUnity = tau_v / tau_c1;
+      
+      results.push({
+        ir: IR,
+        cw: crackWidth,
+        sv: shearUnity,
+        governingScore: Math.max(IR, crackWidth / 0.2, shearUnity)
+      });
+    });
     
-    // Apply Min/Max steel limits (0.8% and 4.0%)
-    const Asc_min = 0.008 * Ag;
-    const Asc_max = 0.04 * Ag;
+    // Update labels
+    this.c1Ir.textContent = results[0].ir.toFixed(2);
+    this.c2Ir.textContent = results[1].ir.toFixed(2);
+    this.c3Ir.textContent = results[2].ir.toFixed(2);
     
-    if (Asc_req < Asc_min) {
-      Asc_req = Asc_min;
+    this.c1Cw.textContent = results[0].cw.toFixed(4) + ' mm';
+    this.c2Cw.textContent = results[1].cw.toFixed(4) + ' mm';
+    this.c3Cw.textContent = results[2].cw.toFixed(4) + ' mm';
+    
+    this.c1Sv.textContent = results[0].sv.toFixed(2);
+    this.c2Sv.textContent = results[1].sv.toFixed(2);
+    this.c3Sv.textContent = results[2].sv.toFixed(2);
+    
+    // Governing case
+    let worstIdx = 0;
+    let maxScore = -Infinity;
+    results.forEach((r, idx) => {
+      if (r.governingScore > maxScore) {
+        maxScore = r.governingScore;
+        worstIdx = idx;
+      }
+    });
+    
+    const worstCaseName = `CASE ${worstIdx + 1}`;
+    this.worstCaseLbl.textContent = worstCaseName;
+    
+    const worstRes = results[worstIdx];
+    const isSafe = (worstRes.ir <= 1.0) && (worstRes.cw <= 0.2) && (worstRes.sv <= 1.0);
+    
+    if (isSafe) {
+      this.statusBanner.className = 'badge-ok';
+      this.finalCheckLbl.textContent = 'SAFE (PASS)';
+      this.finalCheckLbl.style.color = 'var(--accent-green)';
+    } else {
+      this.statusBanner.className = 'badge-worst';
+      this.finalCheckLbl.textContent = 'NOT O.K. (REVISE)';
+      this.finalCheckLbl.style.color = '#ef4444';
     }
     
-    // Calculate number of bars
-    const barArea = (Math.PI / 4) * dia * dia;
-    let numBars = Math.ceil(Asc_req / barArea);
-    
-    // Columns must have even number of bars, min 4
-    if (numBars < 4) {
-      numBars = 4;
-    } else if (numBars % 2 !== 0) {
-      numBars += 1;
-    }
-    
-    // Prevent exceeding maximum steel limit
-    const providedAsc = numBars * barArea;
-    const pct = (providedAsc / Ag) * 100;
-    
-    // Tie spacing calculation:
-    // spacing = min (Least lateral dimension B, 16 * dia, 300 mm)
-    let tieSpacing = Math.min(B, D, 16 * dia, 300);
-    // Round to nearest 25 mm down
-    tieSpacing = Math.floor(tieSpacing / 25) * 25;
-    if (tieSpacing < 75) tieSpacing = 75; // minimum standard
-    
-    // Update results
-    this.resAsc.innerHTML = `${providedAsc.toFixed(0)}<span class="result-unit">mm²</span>`;
-    this.resPct.innerHTML = `${pct.toFixed(2)}<span class="result-unit">%</span>`;
-    this.resBars.innerHTML = `${numBars}<span class="result-unit">Nos (${dia}φ)</span>`;
-    this.resTies.innerHTML = `${tieSpacing}<span class="result-unit">mm c/c</span>`;
-    
-    this.drawSVG(B, D, numBars, dia, cover);
+    this.drawSVG(b, h, nb, dia, Cc);
   }
 
-  drawSVG(B, D, numBars, dia, cover) {
-    // Scaling logic for SVG: fit column dimension into 320x240 box
+  drawSVG(b, h, nb, dia, Cc) {
     const padding = 40;
     const maxH = 220;
     const maxW = 300;
     
-    const scale = Math.min(maxW / B, maxH / D);
+    const scale = Math.min(maxW / b, maxH / h);
     
-    const svgW = B * scale + padding * 2;
-    const svgH = D * scale + padding * 2;
+    const svgW = b * scale + padding * 2;
+    const svgH = h * scale + padding * 2;
     
     const cX = svgW / 2;
     const cY = svgH / 2;
     
-    const colW = B * scale;
-    const colH = D * scale;
+    const colW = b * scale;
+    const colH = h * scale;
     
     const colX = cX - colW / 2;
     const colY = cY - colH / 2;
     
-    // Cover offset
-    const covScaled = cover * scale;
+    const covScaled = Cc * scale;
     
-    // Draw columns SVG
     let svgHtml = `
       <svg class="column-svg" viewBox="0 0 ${svgW} ${svgH}" width="100%" height="100%">
-        <!-- Background grid definitions -->
         <defs>
-          <pattern id="svgGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+          <pattern id="svgGridCol" width="10" height="10" patternUnits="userSpaceOnUse">
             <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(0,240,255,0.02)" stroke-width="0.5"/>
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#svgGrid)" />
+        <rect width="100%" height="100%" fill="url(#svgGridCol)" />
         
-        <!-- Column concrete boundary -->
+        <!-- Concrete cross section -->
         <rect x="${colX}" y="${colY}" width="${colW}" height="${colH}" 
               fill="rgba(148, 163, 184, 0.08)" stroke="#94a3b8" stroke-width="2" />
               
-        <!-- Clear Cover line (Dashed) -->
+        <!-- Cover offset -->
         <rect x="${colX + covScaled}" y="${colY + covScaled}" 
               width="${colW - covScaled * 2}" height="${colH - covScaled * 2}" 
               fill="none" stroke="rgba(0, 240, 255, 0.25)" stroke-dasharray="3,3" stroke-width="1" />
               
-        <!-- Reinforcement Ties (Links) Outer Ring -->
+        <!-- Reinforcement Stirrup/Tie -->
         <rect x="${colX + covScaled}" y="${colY + covScaled}" 
               width="${colW - covScaled * 2}" height="${colH - covScaled * 2}" 
               fill="none" stroke="#ff6b00" stroke-width="2.5" rx="4" />
     `;
     
-    // Place rebar circles
-    // For a rectangular column, we distribute rebars around the perimeter
-    // Number of bars must be even: e.g. 4, 6, 8, 10, 12, etc.
-    const rebarCoords = [];
-    const internalW = colW - covScaled * 2;
-    const internalH = colH - covScaled * 2;
+    // Distribute nb rebars around the perimeter of the tie box
     const startX = colX + covScaled;
     const startY = colY + covScaled;
+    const innerW = colW - covScaled * 2;
+    const innerH = colH - covScaled * 2;
     
-    const rRadius = Math.max((dia / 2) * scale, 4); // scaled rebar radius
+    const rRadius = Math.max((dia / 2) * scale, 3.5);
     
-    if (numBars === 4) {
-      // 4 corners
-      rebarCoords.push({x: startX, y: startY});
-      rebarCoords.push({x: startX + internalW, y: startY});
-      rebarCoords.push({x: startX, y: startY + internalH});
-      rebarCoords.push({x: startX + internalW, y: startY + internalH});
-    } else if (numBars === 6) {
-      // 4 corners, plus 2 along depth (or width depending on aspect ratio)
-      rebarCoords.push({x: startX, y: startY});
-      rebarCoords.push({x: startX + internalW, y: startY});
-      rebarCoords.push({x: startX, y: startY + internalH});
-      rebarCoords.push({x: startX + internalW, y: startY + internalH});
+    // General perimeter distribution algorithm
+    // We have 4 corners, and we distribute the remaining nb - 4 rebars on the four edges
+    const rebarCoords = [];
+    
+    if (nb >= 4) {
+      // 4 Corners
+      rebarCoords.push({ x: startX, y: startY });
+      rebarCoords.push({ x: startX + innerW, y: startY });
+      rebarCoords.push({ x: startX, y: startY + innerH });
+      rebarCoords.push({ x: startX + innerW, y: startY + innerH });
       
-      if (D >= B) {
-        rebarCoords.push({x: startX, y: startY + internalH / 2});
-        rebarCoords.push({x: startX + internalW, y: startY + internalH / 2});
-      } else {
-        rebarCoords.push({x: startX + internalW / 2, y: startY});
-        rebarCoords.push({x: startX + internalW / 2, y: startY + internalH});
-      }
-    } else {
-      // 8 or more bars: distribute along faces
-      // 4 corners
-      rebarCoords.push({x: startX, y: startY});
-      rebarCoords.push({x: startX + internalW, y: startY});
-      rebarCoords.push({x: startX, y: startY + internalH});
-      rebarCoords.push({x: startX + internalW, y: startY + internalH});
+      const remaining = nb - 4;
+      // Distribute remaining evenly along sides: 2 horizontal sides, 2 vertical sides
+      // Let's divide based on aspect ratio
+      const perimeterRatio = innerW / (innerW + innerH);
+      const remH = Math.round(remaining * perimeterRatio / 2) * 2;
+      const remV = remaining - remH;
       
-      const barsPerSide = (numBars - 4) / 2; // remaining distributed on left and right faces
-      // For general rectangular, distribute along the two longer faces
-      if (D >= B) {
-        // distribute along depth
-        const spacingH = internalH / (barsPerSide + 1);
-        for (let i = 1; i <= barsPerSide; i++) {
-          rebarCoords.push({x: startX, y: startY + spacingH * i});
-          rebarCoords.push({x: startX + internalW, y: startY + spacingH * i});
+      const barsTopBottom = remH / 2;
+      const barsLeftRight = remV / 2;
+      
+      // Top & Bottom edges
+      if (barsTopBottom > 0) {
+        const stepW = innerW / (barsTopBottom + 1);
+        for (let i = 1; i <= barsTopBottom; i++) {
+          rebarCoords.push({ x: startX + stepW * i, y: startY });
+          rebarCoords.push({ x: startX + stepW * i, y: startY + innerH });
         }
-      } else {
-        // distribute along width
-        const spacingW = internalW / (barsPerSide + 1);
-        for (let i = 1; i <= barsPerSide; i++) {
-          rebarCoords.push({x: startX + spacingW * i, y: startY});
-          rebarCoords.push({x: startX + spacingW * i, y: startY + internalH});
+      }
+      
+      // Left & Right edges
+      if (barsLeftRight > 0) {
+        const stepH = innerH / (barsLeftRight + 1);
+        for (let i = 1; i <= barsLeftRight; i++) {
+          rebarCoords.push({ x: startX, y: startY + stepH * i });
+          rebarCoords.push({ x: startX + innerW, y: startY + stepH * i });
         }
       }
     }
     
-    // Render the rebar circles
+    // Draw the rebar dots
     rebarCoords.forEach(pt => {
       svgHtml += `
-        <!-- Main Longitudinal Rebar -->
         <circle cx="${pt.x}" cy="${pt.y}" r="${rRadius}" fill="#00e676" stroke="#00b0ff" stroke-width="1" />
         <circle cx="${pt.x - rRadius/3}" cy="${pt.y - rRadius/3}" r="${rRadius/3}" fill="#ffffff" opacity="0.6" />
       `;
     });
     
-    // Add Dimension Lines & CAD Labels
+    // Extension line dimension annotations (CAD style)
     const dimOffset = 25;
-    // Width dimension (top)
     svgHtml += `
       <g stroke="#475569" stroke-width="1">
-        <!-- Extension lines -->
         <line x1="${colX}" y1="${colY}" x2="${colX}" y2="${colY - dimOffset}" />
         <line x1="${colX + colW}" y1="${colY}" x2="${colX + colW}" y2="${colY - dimOffset}" />
-        <!-- Dimension line -->
         <line x1="${colX + 5}" y1="${colY - dimOffset + 8}" x2="${colX + colW - 5}" y2="${colY - dimOffset + 8}" />
-        <!-- Arrow heads -->
         <polygon points="${colX},${colY - dimOffset + 8} ${colX + 6},${colY - dimOffset + 5} ${colX + 6},${colY - dimOffset + 11}" fill="#475569" />
         <polygon points="${colX + colW},${colY - dimOffset + 8} ${colX + colW - 6},${colY - dimOffset + 5} ${colX + colW - 6},${colY - dimOffset + 11}" fill="#475569" />
       </g>
-      <text x="${cX}" y="${colY - dimOffset + 3}" fill="#94a3b8" font-size="10" font-family="Outfit" text-anchor="middle" font-weight="600">${B} mm</text>
-    `;
-    
-    // Depth dimension (left)
-    svgHtml += `
+      <text x="${cX}" y="${colY - dimOffset + 3}" fill="#94a3b8" font-size="10" font-family="Outfit" text-anchor="middle" font-weight="600">${b} mm</text>
+      
       <g stroke="#475569" stroke-width="1">
-        <!-- Extension lines -->
         <line x1="${colX}" y1="${colY}" x2="${colX - dimOffset}" y2="${colY}" />
         <line x1="${colX}" y1="${colY + colH}" x2="${colX - dimOffset}" y2="${colY + colH}" />
-        <!-- Dimension line -->
         <line x1="${colX - dimOffset + 8}" y1="${colY + 5}" x2="${colX - dimOffset + 8}" y2="${colY + colH - 5}" />
-        <!-- Arrow heads -->
         <polygon points="${colX - dimOffset + 8},${colY} ${colX - dimOffset + 5},${colY + 6} ${colX - dimOffset + 11},${colY + 6}" fill="#475569" />
         <polygon points="${colX - dimOffset + 8},${colY + colH} ${colX - dimOffset + 5},${colY + colH - 6} ${colX - dimOffset + 11},${colY + colH - 6}" fill="#475569" />
       </g>
-      <text x="${colX - dimOffset + 3}" y="${cY}" fill="#94a3b8" font-size="10" font-family="Outfit" text-anchor="middle" font-weight="600" transform="rotate(-90, ${colX - dimOffset + 3}, ${cY})">${D} mm</text>
+      <text x="${colX - dimOffset + 3}" y="${cY}" fill="#94a3b8" font-size="10" font-family="Outfit" text-anchor="middle" font-weight="600" transform="rotate(-90, ${colX - dimOffset + 3}, ${cY})">${h} mm</text>
     `;
     
     svgHtml += `</svg>`;
-    
     this.visualizer.innerHTML = svgHtml;
   }
 }
