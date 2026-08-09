@@ -5,6 +5,8 @@ import { SlabSolver } from './js/slabSolver.js';
 import { MuffSolver } from './js/muffSolver.js';
 import { QuantityEstimator } from './js/quantityEstimator.js';
 import { StructuralPlanner } from './js/structuralPlanner.js';
+import { WindSolver } from './js/windSolver.js';
+import { BerthingSolver } from './js/berthingSolver.js';
 
 class App {
   constructor() {
@@ -22,7 +24,9 @@ class App {
       slab: null,
       muff: null,
       quantity: null,
-      planner: null
+      planner: null,
+      wind: null,
+      berthing: null
     };
 
     this.initNavigation();
@@ -136,6 +140,12 @@ class App {
       case 'planner':
         if (!this.solvers.planner) this.solvers.planner = new StructuralPlanner();
         else this.solvers.planner.draw();
+        break;
+      case 'wind':
+        if (!this.solvers.wind) this.solvers.wind = new WindSolver();
+        break;
+      case 'berthing':
+        if (!this.solvers.berthing) this.solvers.berthing = new BerthingSolver();
         break;
     }
   }

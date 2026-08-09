@@ -133,6 +133,18 @@
             Structural Grid Planner
           </a>
         </li>
+        <li class="nav-item" data-tab="wind">
+          <a href="#wind">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path></svg>
+            Wind Load (IS 875)
+          </a>
+        </li>
+        <li class="nav-item" data-tab="berthing">
+          <a href="#berthing">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            Berthing Energy (IS 4651)
+          </a>
+        </li>
       </ul>
       
       <div class="sidebar-footer" style="font-size: 11px; line-height: 1.5; color: var(--text-secondary); border-top: 1px solid var(--border-color-soft); padding: 15px 20px;">
@@ -1528,6 +1540,237 @@
 
               <div class="canvas-wrapper">
                 <canvas id="plannerCanvas" class="canvas-element" style="cursor: crosshair;"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- WIND LOAD SOLVER (IS 875 PART 3) -->
+        <section id="wind" class="page-section">
+          <div class="calculator-container" style="grid-template-columns: 440px 1fr;">
+            <!-- CONTROL PANEL -->
+            <div class="control-panel">
+              <h3 class="panel-title">Wind Parameters (IS 875-3)</h3>
+              
+              <div class="input-group">
+                <div class="input-label">
+                  <span>Basic Wind Speed ($V_b$)</span>
+                  <span class="input-val" id="val-wind-vb">50 m/s</span>
+                </div>
+                <input type="range" id="input-wind-vb" min="33" max="55" step="1" value="50">
+              </div>
+
+              <div class="input-group">
+                <label class="input-label">Terrain Category (Table 2)</label>
+                <select id="input-wind-cat" style="width: 100%;">
+                  <option value="1">Category 1 (Open sea / flat land)</option>
+                  <option value="2" selected>Category 2 (Open land with small obstructions)</option>
+                  <option value="3">Category 3 (Suburban / industrial terrain)</option>
+                  <option value="4">Category 4 (Urban centers / close buildings)</option>
+                </select>
+              </div>
+
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Risk Factor ($K_1$)</span>
+                  <input type="number" id="input-wind-k1" value="1.0" step="0.05">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Topography ($K_3$)</span>
+                  <input type="number" id="input-wind-k3" value="1.0" step="0.05">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Importance ($K_4$)</span>
+                  <input type="number" id="input-wind-k4" value="1.0" step="0.05">
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px; margin-bottom: 15px; border-top: 1px solid var(--border-color-soft); padding-top: 12px;">
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Directionality ($K_d$)</span>
+                  <input type="number" id="input-wind-kd" value="1.0" step="0.05">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Area Averaging ($K_a$)</span>
+                  <input type="number" id="input-wind-ka" value="1.0" step="0.05">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Combination ($K_c$)</span>
+                  <input type="number" id="input-wind-kc" value="1.0" step="0.05">
+                </div>
+              </div>
+
+              <h3 class="panel-title">Building Geometry</h3>
+              <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Length B (m)</span>
+                  <input type="number" id="input-wind-b" value="33.75">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Width L (m)</span>
+                  <input type="number" id="input-wind-l" value="99.75">
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Storey Count</span>
+                  <input type="number" id="input-wind-stories" value="14">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Storey Height (m)</span>
+                  <input type="number" id="input-wind-storyh" value="3.9">
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Force Coeff ($C_{fx}$)</span>
+                  <input type="number" id="input-wind-cfx" value="1.2" step="0.1">
+                </div>
+                <div style="flex: 1;"></div>
+              </div>
+            </div>
+
+            <!-- DISPLAY PANEL -->
+            <div class="display-panel">
+              <h3 class="panel-title">Storey-wise Wind Force Distribution</h3>
+              
+              <div class="table-wrapper" style="max-height: 250px; overflow-y: auto;">
+                <table class="calc-table">
+                  <thead>
+                    <tr>
+                      <th>Storey</th>
+                      <th>Height z (m)</th>
+                      <th>$K_2$ Factor</th>
+                      <th>Speed $V_z$ (m/s)</th>
+                      <th>Pressure $p_d$ (kN/m²)</th>
+                      <th>Wind Force $F_x$ (kN)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="wind-table-body">
+                    <!-- Dynamic -->
+                  </tbody>
+                  <tfoot>
+                    <tr class="total-row">
+                      <td colspan="5">Total Base Shear Force</td>
+                      <td id="res-wind-totforce">0.00 kN</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <!-- Graphic Force Diagram -->
+              <div class="canvas-wrapper" style="height: 200px; background: #070b13; margin-top: 15px; position: relative;">
+                <canvas id="windCanvas" class="canvas-element" style="width:100%; height:100%;"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BERTHING ENERGY SOLVER (IS 4651 PART 3) -->
+        <section id="berthing" class="page-section">
+          <div class="calculator-container" style="grid-template-columns: 440px 1fr;">
+            <!-- CONTROL PANEL -->
+            <div class="control-panel">
+              <h3 class="panel-title">Vessel & Berthing Parameters</h3>
+              
+              <div class="input-group">
+                <div class="input-label">
+                  <span>Displacement Tonnage ($W_d$ / DWT)</span>
+                  <span class="input-val" id="val-berth-dwt">25 MT</span>
+                </div>
+                <input type="range" id="input-berth-dwt" min="10" max="500" step="5" value="25">
+              </div>
+
+              <div class="input-group">
+                <div class="input-label">
+                  <span>Berthing Approach Velocity ($V$)</span>
+                  <span class="input-val" id="val-berth-vel">0.25 m/s</span>
+                </div>
+                <input type="range" id="input-berth-vel" min="0.05" max="0.80" step="0.01" value="0.25">
+              </div>
+
+              <div class="input-group">
+                <div class="input-label">
+                  <span>Berthing Approach Angle ($\theta$)</span>
+                  <span class="input-val" id="val-berth-angle">20.0 °</span>
+                </div>
+                <input type="range" id="input-berth-angle" min="0" max="45" step="0.5" value="20.0">
+              </div>
+
+              <h3 class="panel-title">Vessel Details</h3>
+              <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Length L (m)</span>
+                  <input type="number" id="input-berth-len" value="18.0">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Width B (m)</span>
+                  <input type="number" id="input-berth-w" value="4.7">
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Draft d (m)</span>
+                  <input type="number" id="input-berth-draft" value="2.0">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-secondary);">Abnormal FOS Factor</span>
+                  <input type="number" id="input-berth-fos" value="2.0" step="0.5">
+                </div>
+              </div>
+            </div>
+
+            <!-- DISPLAY PANEL -->
+            <div class="display-panel">
+              <h3 class="panel-title">Berthing Energy & Fender Selection</h3>
+              
+              <div class="table-wrapper">
+                <table class="calc-table">
+                  <thead>
+                    <tr>
+                      <th>Vessel Coefficient</th>
+                      <th>Calculated Value</th>
+                      <th>Standard Code Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Mass Coefficient ($C_m$)</td>
+                      <td id="res-berth-cm" class="input-val">0.00</td>
+                      <td>IS 4651 Part 3 Clause 5.2.1.2</td>
+                    </tr>
+                    <tr>
+                      <td>Eccentricity Coefficient ($C_e$)</td>
+                      <td id="res-berth-ce" class="input-val">0.00</td>
+                      <td>IS 4651 Part 3 Clause 5.2.1.3</td>
+                    </tr>
+                    <tr>
+                      <td>Softness Coefficient ($C_s$)</td>
+                      <td class="input-val">0.950</td>
+                      <td>IS 4651 Part 3 Clause 5.2.1.4</td>
+                    </tr>
+                    <tr class="total-row">
+                      <td>Normal Berthing Energy ($E$)</td>
+                      <td id="res-berth-e" class="input-val" style="color: var(--accent-cyan);">0.00 MTm</td>
+                      <td>Design Kinetic Energy</td>
+                    </tr>
+                    <tr class="total-row" style="background: rgba(255, 107, 0, 0.03);">
+                      <td>Design Berthing Energy ($E_d$)</td>
+                      <td id="res-berth-ed" class="input-val" style="color: var(--accent-orange);">0.00 MTm</td>
+                      <td>Includes FOS & 10% Tolerances</td>
+                    </tr>
+                    <tr class="total-row" style="background: rgba(0, 230, 118, 0.03);">
+                      <td>Proposed Fender Model</td>
+                      <td id="res-berth-fender" class="input-val" style="color: var(--accent-green);">Cylindrical Fender 200 OD x 100 ID</td>
+                      <td>Fender energy rating O.K.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Graphic Collision Simulation -->
+              <div class="canvas-wrapper" style="height: 180px; background: #070b13; margin-top: 15px; position: relative;">
+                <canvas id="berthCanvas" class="canvas-element" style="width:100%; height:100%;"></canvas>
               </div>
             </div>
           </div>
