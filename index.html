@@ -1203,8 +1203,176 @@
               </div>
 
               <div class="input-group" style="margin-top: 15px; border-top: 1px solid var(--border-color-soft); padding-top: 15px;">
+                <label class="input-label" style="color: var(--accent-cyan);">Parametric Material Takeoff</label>
+                <select id="takeoff-element-type" style="width: 100%; margin-bottom: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: white; padding: 6px; border-radius: 4px;">
+                  <option value="pile">Bored Cast-in-Situ Pile</option>
+                  <option value="muff">Concrete Pile Muff</option>
+                  <option value="beam">Precast Beams</option>
+                  <option value="slab">Precast Deck Slab</option>
+                </select>
+
+                <!-- Pile Inputs -->
+                <div id="takeoff-inputs-pile" class="takeoff-input-block">
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Diameter (mm)</span>
+                      <input type="number" id="input-takeoff-pile-dia" value="600">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Length (m)</span>
+                      <input type="number" id="input-takeoff-pile-len" value="13">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Pile Count</span>
+                      <input type="number" id="input-takeoff-pile-count" value="12">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
+                      <input type="number" id="input-takeoff-pile-steel" value="2.0" step="0.1">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Liner Length (m)</span>
+                      <input type="number" id="input-takeoff-pile-liner" value="2">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Liner Thick (mm)</span>
+                      <input type="number" id="input-takeoff-pile-linert" value="6">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Muff Inputs -->
+                <div id="takeoff-inputs-muff" class="takeoff-input-block" style="display: none;">
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Width (mm)</span>
+                      <input type="number" id="input-takeoff-muff-w" value="1200">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Length (mm)</span>
+                      <input type="number" id="input-takeoff-muff-l" value="1200">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Depth (mm)</span>
+                      <input type="number" id="input-takeoff-muff-d" value="600">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Muff Count</span>
+                      <input type="number" id="input-takeoff-muff-count" value="12">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
+                      <input type="number" id="input-takeoff-muff-steel" value="1.5" step="0.1">
+                    </div>
+                    <div style="flex: 1;"></div>
+                  </div>
+                </div>
+
+                <!-- Beam Inputs -->
+                <div id="takeoff-inputs-beam" class="takeoff-input-block" style="display: none;">
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Beam Width (mm)</span>
+                      <input type="number" id="input-takeoff-beam-w" value="400">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Beam Depth (mm)</span>
+                      <input type="number" id="input-takeoff-beam-d" value="500">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Beam Length (m)</span>
+                      <input type="number" id="input-takeoff-beam-len" value="25">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Beam Count</span>
+                      <input type="number" id="input-takeoff-beam-count" value="4">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
+                      <input type="number" id="input-takeoff-beam-steel" value="2.5" step="0.1">
+                    </div>
+                    <div style="flex: 1;"></div>
+                  </div>
+                </div>
+
+                <!-- Slab Inputs -->
+                <div id="takeoff-inputs-slab" class="takeoff-input-block" style="display: none;">
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Deck Length (m)</span>
+                      <input type="number" id="input-takeoff-slab-len" value="25">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Deck Width (m)</span>
+                      <input type="number" id="input-takeoff-slab-w" value="4">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Precast Thick (mm)</span>
+                      <input type="number" id="input-takeoff-slab-tp" value="375">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Topping Thick (mm)</span>
+                      <input type="number" id="input-takeoff-slab-tt" value="125">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
+                      <input type="number" id="input-takeoff-slab-steel" value="1.8" step="0.1">
+                    </div>
+                    <div style="flex: 1;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Calculated Quantities results table -->
+              <div class="table-wrapper" style="margin-top: 15px; border-color: rgba(0, 240, 255, 0.15);">
+                <table class="calc-table" style="font-size: 11px;">
+                  <thead>
+                    <tr>
+                      <th>Material Component</th>
+                      <th>Calculated Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Concrete Volume</td>
+                      <td id="takeoff-res-concrete" class="input-val">0.00 Cum</td>
+                    </tr>
+                    <tr>
+                      <td>Steel Reinforcement</td>
+                      <td id="takeoff-res-steel" class="input-val">0.00 MT</td>
+                    </tr>
+                    <tr>
+                      <td>Liner Steel (if Pile)</td>
+                      <td id="takeoff-res-liner" class="input-val">0.00 MT</td>
+                    </tr>
+                    <tr>
+                      <td>Formwork Area</td>
+                      <td id="takeoff-res-formwork" class="input-val">0.00 Sqm</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <button class="btn btn-primary" id="btn-apply-takeoff" style="margin-top: 12px; width: 100%;">Apply to BOQ Statement</button>
+
+              <div class="input-group" style="margin-top: 15px; border-top: 1px solid var(--border-color-soft); padding-top: 15px;">
                 <label class="input-label" style="color: var(--accent-orange);">Interactive BOQ Quick Rates (Rs)</label>
-                
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                   <div style="display: flex; align-items: center; justify-content: space-between;">
                     <span style="font-size: 11px; color: var(--text-secondary);">Pile Boring (/Rmt)</span>
