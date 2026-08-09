@@ -399,10 +399,44 @@ export class PileSolver {
       const Mu1 = Coeff * fck * Math.pow(D, 3) * 1e-6;
       const IR = Math.pow(Mu / Mu1, alpha_n);
       
-      // Crack width calibration
-      let crackWidth = 0.10;
-      if (idx === 0) crackWidth = 0.26;
-      else if (idx === 1) crackWidth = 0.24;
+      // Dynamic Crack Width (IS 456 Annex F)
+      // Service loads are approximately factored load / 1.3
+      const P_service = Pu / 1.3;
+      const M_service = Mu / 1.3;
+      
+      const Ec = 5000 * Math.sqrt(fck);
+      const Es = 200000;
+      const mr = Es / Ec;
+      
+      const Puz_val = (0.45 * fck * Ac + 0.75 * fy * Asc) * 1e-3; // kN
+      const k_nc = Math.max(0.2, Math.min(0.6, 0.45 + 0.135 * (P_service / Puz_val)));
+      const d_nc = k_nc * d;
+      
+      // Maximum concrete compressive stress under service loads
+      const Ig = (Math.PI * Math.pow(D, 4)) / 64; // Gross moment of inertia mm^4
+      const sig_cbca = (P_service * 1e3 / Ac) + (M_service * 1e6 * (D / 2) / Ig); // MPa
+      
+      // Steel tensile stress
+      const sig_st = Math.max(10, (mr * sig_cbca * (d - d_nc)) / d_nc); // MPa
+      
+      // Spacing of reinforcement bundles at the outer face
+      const numBundles_val = Math.ceil(nb / npb);
+      const C_o = (Math.PI * D) / numBundles_val - 2 * dm;
+      const C_min = Cc + ds;
+      const h_1 = D - C_min;
+      
+      const a_cr1 = C_min;
+      const a_cr2 = Math.sqrt(a_cr1 * a_cr1 + Math.pow(C_o / 2, 2));
+      
+      // tension stiffening strain offset a_1
+      const a_1 = (D * (D - d_nc)) / (3 * Es * Asc * h_1);
+      const eps_1 = (sig_st / Es) * (D - d_nc) / (h_1 - d_nc);
+      const eps_m = Math.max(1e-6, eps_1 - a_1);
+      
+      const W_cr1 = (3 * a_cr1 * eps_m) / (1 + 2 * (a_cr1 - C_min) / (D - d_nc));
+      const W_cr2 = (3 * a_cr2 * eps_m) / (1 + 2 * (a_cr2 - C_min) / (D - d_nc));
+      
+      const crackWidth = Math.max(W_cr1, W_cr2);
       
       // Shear check
       const Ac_mm = (Math.PI * D * D) / 4;
