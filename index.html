@@ -1179,60 +1179,87 @@
           </div>
         </section>
 
-        <!-- JETTY BOQ & COST ESTIMATOR TAB -->
+        <!-- GENERAL BOQ & DETAILED MATERIAL TAKEOFF TAB -->
         <section id="quantity" class="page-section">
-          <div class="calculator-container" style="grid-template-columns: 400px 1fr;">
+          <div class="calculator-container" style="grid-template-columns: 440px 1fr;">
             <!-- CONTROL PANEL -->
             <div class="control-panel">
-              <h3 class="panel-title">Jetty BOQ Configuration</h3>
+              <h3 class="panel-title">Parametric Takeoff Calculator</h3>
               
               <div class="input-group">
-                <label class="input-label">Project Location / Type</label>
-                <select id="input-boq-category" style="width: 100%;">
-                  <option value="passenger" selected>Passenger Jetty (Madhwad)</option>
-                  <option value="fish">Existing Fish Jetty (Refurbishment)</option>
-                </select>
-              </div>
-
-              <div class="input-group">
-                <label class="input-label">Pile Configuration Option</label>
-                <select id="input-boq-option" style="width: 100%;">
-                  <option value="single" selected>Option 1: Single Pile Option</option>
-                  <option value="twin">Option 2: Twin Pile Option (Revised)</option>
-                </select>
-              </div>
-
-              <div class="input-group" style="margin-top: 15px; border-top: 1px solid var(--border-color-soft); padding-top: 15px;">
-                <label class="input-label" style="color: var(--accent-cyan);">Parametric Material Takeoff</label>
+                <label class="input-label">Select Element to Estimate</label>
                 <select id="takeoff-element-type" style="width: 100%; margin-bottom: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: white; padding: 6px; border-radius: 4px;">
-                  <option value="pile">Bored Cast-in-Situ Pile</option>
+                  <option value="pile" selected>Bored Cast-in-Situ Pile (With Cage Details)</option>
                   <option value="muff">Concrete Pile Muff</option>
-                  <option value="beam">Precast Beams</option>
-                  <option value="slab">Precast Deck Slab</option>
+                  <option value="beam">Precast Concrete Beams</option>
+                  <option value="slab">Composite Deck Slab</option>
                 </select>
+              </div>
 
-                <!-- Pile Inputs -->
-                <div id="takeoff-inputs-pile" class="takeoff-input-block">
+              <!-- DETAILED PILE CAGE INPUTS -->
+              <div id="takeoff-inputs-pile" class="takeoff-input-block">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Pile Dia (mm)</span>
+                    <input type="number" id="input-takeoff-pile-dia" value="600">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Pile Length (m)</span>
+                    <input type="number" id="input-takeoff-pile-len" value="13">
+                  </div>
+                </div>
+                
+                <div style="border-top: 1px solid var(--border-color-soft); padding-top: 8px; margin-top: 8px;">
+                  <span style="font-size: 11px; font-weight: 600; color: var(--accent-cyan); display: block; margin-bottom: 6px;">Main Rebars (Longitudinal)</span>
                   <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                     <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Diameter (mm)</span>
-                      <input type="number" id="input-takeoff-pile-dia" value="600">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Bar Diameter (mm)</span>
+                      <input type="number" id="input-takeoff-pile-main-dia" value="20">
                     </div>
                     <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Length (m)</span>
-                      <input type="number" id="input-takeoff-pile-len" value="13">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Bar Count</span>
+                      <input type="number" id="input-takeoff-pile-main-count" value="12">
                     </div>
                   </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color-soft); padding-top: 8px; margin-top: 8px;">
+                  <span style="font-size: 11px; font-weight: 600; color: var(--accent-orange); display: block; margin-bottom: 6px;">Helical Reinforcement (Spiral)</span>
                   <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                     <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Pile Count</span>
-                      <input type="number" id="input-takeoff-pile-count" value="12">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Spiral Dia (mm)</span>
+                      <input type="number" id="input-takeoff-pile-helical-dia" value="10">
                     </div>
                     <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
-                      <input type="number" id="input-takeoff-pile-steel" value="2.0" step="0.1">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Spiral Pitch (mm)</span>
+                      <input type="number" id="input-takeoff-pile-helical-pitch" value="150">
                     </div>
                   </div>
+                  <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Clear Cover (mm)</span>
+                      <input type="number" id="input-takeoff-pile-cover" value="50">
+                    </div>
+                    <div style="flex: 1;"></div>
+                  </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color-soft); padding-top: 8px; margin-top: 8px;">
+                  <span style="font-size: 11px; font-weight: 600; color: var(--accent-green); display: block; margin-bottom: 6px;">Stiffener Bracing Rings</span>
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Ring Dia (mm)</span>
+                      <input type="number" id="input-takeoff-pile-stiff-dia" value="16">
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: var(--text-secondary);">Spacing (m)</span>
+                      <input type="number" id="input-takeoff-pile-stiff-spacing" value="2.0" step="0.5">
+                    </div>
+                  </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color-soft); padding-top: 8px; margin-top: 8px;">
+                  <span style="font-size: 11px; font-weight: 600; color: var(--text-primary); display: block; margin-bottom: 6px;">MS Outer Liner</span>
                   <div style="display: flex; gap: 8px;">
                     <div style="flex: 1;">
                       <span style="font-size: 10px; color: var(--text-secondary);">Liner Length (m)</span>
@@ -1244,174 +1271,146 @@
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <!-- Muff Inputs -->
-                <div id="takeoff-inputs-muff" class="takeoff-input-block" style="display: none;">
-                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Width (mm)</span>
-                      <input type="number" id="input-takeoff-muff-w" value="1200">
-                    </div>
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Length (mm)</span>
-                      <input type="number" id="input-takeoff-muff-l" value="1200">
-                    </div>
+              <!-- Muff Inputs -->
+              <div id="takeoff-inputs-muff" class="takeoff-input-block" style="display: none;">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Width (mm)</span>
+                    <input type="number" id="input-takeoff-muff-w" value="1800">
                   </div>
-                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Depth (mm)</span>
-                      <input type="number" id="input-takeoff-muff-d" value="600">
-                    </div>
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Muff Count</span>
-                      <input type="number" id="input-takeoff-muff-count" value="12">
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
-                      <input type="number" id="input-takeoff-muff-steel" value="1.5" step="0.1">
-                    </div>
-                    <div style="flex: 1;"></div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Length (mm)</span>
+                    <input type="number" id="input-takeoff-muff-l" value="1800">
                   </div>
                 </div>
-
-                <!-- Beam Inputs -->
-                <div id="takeoff-inputs-beam" class="takeoff-input-block" style="display: none;">
-                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Beam Width (mm)</span>
-                      <input type="number" id="input-takeoff-beam-w" value="400">
-                    </div>
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Beam Depth (mm)</span>
-                      <input type="number" id="input-takeoff-beam-d" value="500">
-                    </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Depth (mm)</span>
+                    <input type="number" id="input-takeoff-muff-d" value="1000">
                   </div>
-                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Beam Length (m)</span>
-                      <input type="number" id="input-takeoff-beam-len" value="25">
-                    </div>
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Beam Count</span>
-                      <input type="number" id="input-takeoff-beam-count" value="4">
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
-                      <input type="number" id="input-takeoff-beam-steel" value="2.5" step="0.1">
-                    </div>
-                    <div style="flex: 1;"></div>
-                  </div>
-                </div>
-
-                <!-- Slab Inputs -->
-                <div id="takeoff-inputs-slab" class="takeoff-input-block" style="display: none;">
-                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Deck Length (m)</span>
-                      <input type="number" id="input-takeoff-slab-len" value="25">
-                    </div>
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Deck Width (m)</span>
-                      <input type="number" id="input-takeoff-slab-w" value="4">
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Precast Thick (mm)</span>
-                      <input type="number" id="input-takeoff-slab-tp" value="375">
-                    </div>
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Topping Thick (mm)</span>
-                      <input type="number" id="input-takeoff-slab-tt" value="125">
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 8px;">
-                    <div style="flex: 1;">
-                      <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
-                      <input type="number" id="input-takeoff-slab-steel" value="1.8" step="0.1">
-                    </div>
-                    <div style="flex: 1;"></div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
+                    <input type="number" id="input-takeoff-muff-steel" value="1.5" step="0.1">
                   </div>
                 </div>
               </div>
 
-              <!-- Calculated Quantities results table -->
-              <div class="table-wrapper" style="margin-top: 15px; border-color: rgba(0, 240, 255, 0.15);">
-                <table class="calc-table" style="font-size: 11px;">
+              <!-- Beam Inputs -->
+              <div id="takeoff-inputs-beam" class="takeoff-input-block" style="display: none;">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Width (mm)</span>
+                    <input type="number" id="input-takeoff-beam-w" value="400">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Depth (mm)</span>
+                    <input type="number" id="input-takeoff-beam-d" value="600">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Length (m)</span>
+                    <input type="number" id="input-takeoff-beam-len" value="25">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
+                    <input type="number" id="input-takeoff-beam-steel" value="2.5" step="0.1">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Slab Inputs -->
+              <div id="takeoff-inputs-slab" class="takeoff-input-block" style="display: none;">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Deck Length (m)</span>
+                    <input type="number" id="input-takeoff-slab-len" value="30">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Deck Width (m)</span>
+                    <input type="number" id="input-takeoff-slab-w" value="5">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Precast Thick (mm)</span>
+                    <input type="number" id="input-takeoff-slab-tp" value="150">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Topping Thick (mm)</span>
+                    <input type="number" id="input-takeoff-slab-tt" value="150">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Steel Ratio (%)</span>
+                    <input type="number" id="input-takeoff-slab-steel" value="1.8" step="0.1">
+                  </div>
+                  <div style="flex: 1;"></div>
+                </div>
+              </div>
+
+              <!-- Detailed Takeoff Results Matrix -->
+              <div class="table-wrapper" style="margin-top: 15px; border-color: rgba(0, 240, 255, 0.15); max-height: 180px; overflow-y: auto;">
+                <table class="calc-table" style="font-size: 11px;" id="takeoff-results-table">
                   <thead>
                     <tr>
-                      <th>Material Component</th>
-                      <th>Calculated Qty</th>
+                      <th>Takeoff Component</th>
+                      <th>Quantity Output</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    <tr>
-                      <td>Concrete Volume</td>
-                      <td id="takeoff-res-concrete" class="input-val">0.00 Cum</td>
-                    </tr>
-                    <tr>
-                      <td>Steel Reinforcement</td>
-                      <td id="takeoff-res-steel" class="input-val">0.00 MT</td>
-                    </tr>
-                    <tr>
-                      <td>Liner Steel (if Pile)</td>
-                      <td id="takeoff-res-liner" class="input-val">0.00 MT</td>
-                    </tr>
-                    <tr>
-                      <td>Formwork Area</td>
-                      <td id="takeoff-res-formwork" class="input-val">0.00 Sqm</td>
-                    </tr>
+                  <tbody id="takeoff-results-tbody">
+                    <!-- Loaded dynamically based on selected element -->
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              <button class="btn btn-primary" id="btn-apply-takeoff" style="margin-top: 12px; width: 100%;">Apply to BOQ Statement</button>
-
-              <div class="input-group" style="margin-top: 15px; border-top: 1px solid var(--border-color-soft); padding-top: 15px;">
-                <label class="input-label" style="color: var(--accent-orange);">Interactive BOQ Quick Rates (Rs)</label>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 11px; color: var(--text-secondary);">Pile Boring (/Rmt)</span>
-                    <input type="number" id="rate-boq-pile" value="28000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+            <!-- DISPLAY PANEL (DYNAMIC BOQ ESTIMATOR) -->
+            <div class="display-panel">
+              <!-- Add Custom Item Form -->
+              <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color-soft); border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+                <h4 style="font-size: 12px; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Add Calculated / Custom Item to BOQ</h4>
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; align-items: flex-end;">
+                  <div>
+                    <span style="font-size: 10px; color: var(--text-secondary);">Item Description</span>
+                    <input type="text" id="add-boq-desc" placeholder="e.g. bored cast-in-situ concrete piles" style="width: 100%; padding: 5px; font-size:12px;">
                   </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 11px; color: var(--text-secondary);">Pile Muff (/Nos)</span>
-                    <input type="number" id="rate-boq-muff" value="45000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+                  <div>
+                    <span style="font-size: 10px; color: var(--text-secondary);">Quantity</span>
+                    <input type="number" id="add-boq-qty" value="1.0" step="0.1" style="width: 100%; padding: 5px; font-size:12px;">
                   </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 11px; color: var(--text-secondary);">Precast Beams (/Cum)</span>
-                    <input type="number" id="rate-boq-beam" value="65000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+                  <div>
+                    <span style="font-size: 10px; color: var(--text-secondary);">Unit</span>
+                    <select id="add-boq-unit" style="width: 100%; padding: 5px; font-size:12px; background: var(--bg-primary); color: white; border: 1px solid var(--border-color-soft);">
+                      <option value="Cum">Cum</option>
+                      <option value="MT">MT</option>
+                      <option value="Rmt">Rmt</option>
+                      <option value="Nos">Nos</option>
+                      <option value="Sqm">Sqm</option>
+                    </select>
                   </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 11px; color: var(--text-secondary);">Fenders (/Nos)</span>
-                    <input type="number" id="rate-boq-fender" value="75000" style="width: 100px; padding: 4px 8px; font-size:12px;">
+                  <div>
+                    <span style="font-size: 10px; color: var(--text-secondary);">Rate (Rs)</span>
+                    <input type="number" id="add-boq-rate" value="15000" style="width: 100%; padding: 5px; font-size:12px;">
                   </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 11px; color: var(--text-secondary);">Bollards (/Nos)</span>
-                    <input type="number" id="rate-boq-bollard" value="45000" style="width: 100px; padding: 4px 8px; font-size:12px;">
-                  </div>
+                  <button class="btn btn-primary" id="btn-add-boq-item" style="padding: 6px 12px; font-size:12px; height: 31px;">+ Add</button>
                 </div>
               </div>
 
-              <div class="planner-hint" style="margin-top: 15px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                <span>Hover over table items to highlight components in the 3D model.</span>
+              <!-- BOQ Takeoff Table -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 class="panel-title" style="margin: 0; border: none; padding:0;">LIVA Custom Takeoff BOQ Statement</h3>
+                <button class="btn" id="btn-clear-boq" style="padding: 4px 10px; font-size: 11px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">Clear All</button>
               </div>
-            </div>
-
-            <!-- DISPLAY PANEL -->
-            <div class="display-panel">
-              <h3 class="panel-title" id="boq-title">Madhwad Passenger Jetty Estimate Summary</h3>
               
-              <div class="table-wrapper" style="max-height: 280px; overflow-y: auto;">
+              <div class="table-wrapper" style="max-height: 200px; overflow-y: auto;">
                 <table class="calc-table" id="boq-table">
                   <thead>
                     <tr>
-                      <th>S.No</th>
+                      <th style="width: 50px;">S.No</th>
                       <th>Description of Work</th>
                       <th>Qty</th>
                       <th>Unit</th>
@@ -1420,28 +1419,22 @@
                     </tr>
                   </thead>
                   <tbody id="boq-table-body">
-                    <!-- Loaded dynamically -->
+                    <!-- Dynamic Items -->
                   </tbody>
                   <tfoot>
                     <tr class="total-row">
-                      <td colspan="5">Total Estimated Cost</td>
+                      <td colspan="5">Total Calculated Cost</td>
                       <td id="res-boq-total">Rs 0.00</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
-              <!-- Comparative Cost difference banner -->
-              <div id="boq-comparison-banner" class="alert-banner alert-success" style="margin-top: 10px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                <span id="boq-comparison-text">Revised Option requires Rs 21,77,946 extra compared to Single Pile design.</span>
-              </div>
-
-              <!-- 3D Jetty Visualizer Canvas -->
-              <div class="canvas-wrapper" style="height: 250px; display: flex; align-items: center; justify-content: center; background: #070b13; margin-top: 10px; position: relative;">
+              <!-- 3D Detailing Visualizer Canvas -->
+              <div class="canvas-wrapper" style="height: 220px; display: flex; align-items: center; justify-content: center; background: #070b13; margin-top: 15px; position: relative;">
                 <canvas id="boqCanvas" class="canvas-element" style="width:100%; height:100%;"></canvas>
                 <div id="boq-canvas-overlay" style="position: absolute; top: 10px; right: 10px; background: rgba(8, 12, 20, 0.85); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 12px; font-size: 11px; font-family: var(--font-mono); color: var(--accent-cyan); display: none;">
-                  ACTIVE ELEMENT: <span id="boq-active-mesh" style="font-weight: 700;">NONE</span>
+                  DETAILING VIEW: <span id="boq-active-mesh" style="font-weight: 700;">NONE</span>
                 </div>
               </div>
             </div>

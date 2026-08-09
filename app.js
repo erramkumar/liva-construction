@@ -140,7 +140,7 @@ class App {
     }
   }
 
-  // --- PROFESSIONAL 3D GEODESIC DOME ANALYSIS SIMULATION ---
+  // --- PROFESSIONAL 3D WIREFRAME BUILDINGS / SKYSCRAPERS DYNAMICS ---
   initHeroAnimation() {
     const canvas = document.getElementById('heroCanvas');
     if (!canvas) return;
@@ -150,13 +150,11 @@ class App {
     let height = 0;
     let scrollPercent = 0;
     let rotY = 0;
-    let rotX = -0.25;
+    let rotX = -0.2;
     let time = 0;
     
     let mouse = { x: -1000, y: -1000, active: false };
-    let domeNodes = [];
     
-    // Bind scroll events
     const scrollContainer = document.querySelector('.main-wrapper');
     if (scrollContainer) {
       scrollContainer.addEventListener('scroll', () => {
@@ -169,215 +167,190 @@ class App {
       const rect = canvas.parentElement.getBoundingClientRect();
       width = canvas.width = rect.width;
       height = canvas.height = rect.height;
-      setupDome();
     };
-    
-    // Initialize points of a geodesic dome structure
-    const setupDome = () => {
-      domeNodes = [];
-      const rings = [
-        { r: 160, y: -80, count: 16 },
-        { r: 140, y: -40, count: 16 },
-        { r: 110, y: 5,   count: 16 },
-        { r: 70,  y: 45,  count: 12 },
-        { r: 30,  y: 70,  count: 8 },
-        { r: 0,   y: 85,  count: 1 }
-      ];
+
+    // Helper to rotate and project a 3D coordinate
+    const project = (x, y, z, cx, cy, rx, ry, scale, dist) => {
+      // Rotation around Y
+      let x1 = x * Math.cos(ry) - z * Math.sin(ry);
+      let z1 = x * Math.sin(ry) + z * Math.cos(ry);
+      // Rotation around X
+      let y2 = y * Math.cos(rx) - z1 * Math.sin(rx);
+      let z2 = y * Math.sin(rx) + z1 * Math.cos(rx);
       
-      rings.forEach((ring, ringIdx) => {
-        for (let i = 0; i < ring.count; i++) {
-          const theta = (i / ring.count) * Math.PI * 2;
-          domeNodes.push({
-            x: ring.r * Math.cos(theta),
-            y: ring.y,
-            z: ring.r * Math.sin(theta),
-            ringIdx: ringIdx,
-            nodeIdx: i,
-            count: ring.count
-          });
-        }
-      });
+      const px = cx + (x1 * dist) / (z2 + dist) * scale;
+      const py = cy - (y2 * dist) / (z2 + dist) * scale;
+      return { x: px, y: py, depth: z2 };
     };
-    
-    const drawDome = () => {
+
+    const drawBuildings = () => {
       ctx.clearRect(0, 0, width, height);
-      time += 0.01;
-      
+      time += 0.012;
+
       // Blueprint grid backdrop
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.01)';
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.015)';
       ctx.lineWidth = 1;
-      for (let x = 0; x < width; x += 30) {
+      for (let x = 0; x < width; x += 40) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
       }
-      for (let y = 0; y < height; y += 30) {
+      for (let y = 0; y < height; y += 40) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
       }
-      
-      // Rotational dynamics (auto rotation + mouse influence)
-      const targetRotY = time * 0.15 + (mouse.active ? (mouse.x - width/2) * 0.003 : 0);
-      const targetRotX = -0.3 + (mouse.active ? (mouse.y - height/2) * 0.0015 : 0);
-      
-      rotY += (targetRotY - rotY) * 0.08;
-      rotX += (targetRotX - rotX) * 0.08;
-      
+
+      // Base coordinate grid line in 3D
       const cX = width / 2;
-      const cY = height / 2 + 10;
-      const scale = 1.35 * (width / 500);
-      const dist = 500;
+      const cY = height / 2 + 50;
+      const scale = 1.25 * (width / 500);
+      const dist = 600;
+
+      // Auto rotation + mouse coordinate tilt
+      const targetRotY = time * 0.12 + (mouse.active ? (mouse.x - width/2) * 0.0025 : 0);
+      const targetRotX = -0.18 + (mouse.active ? (mouse.y - height/2) * 0.001 : 0);
       
-      // 3D coordinate projection
-      const projected = domeNodes.map(node => {
-        // Rotate Y
-        let x1 = node.x * Math.cos(rotY) - node.z * Math.sin(rotY);
-        let z1 = node.x * Math.sin(rotY) + node.z * Math.cos(rotY);
-        // Rotate X
-        let y2 = node.y * Math.cos(rotX) - z1 * Math.sin(rotX);
-        let z2 = node.y * Math.sin(rotX) + z1 * Math.cos(rotX);
-        
-        // Perspective projection
-        const px = cX + (x1 * dist) / (z2 + dist) * scale;
-        const py = cY - (y2 * dist) / (z2 + dist) * scale;
-        
-        return {
-          x: px,
-          y: py,
-          zDepth: z2,
-          ringIdx: node.ringIdx,
-          nodeIdx: node.nodeIdx,
-          count: node.count
-        };
-      });
-      
-      // Calculate growth limit based on scroll
-      const activeRingsLimit = Math.max(1, Math.floor(scrollPercent * 6.5));
-      
-      // Draw connection lines
+      rotY += (targetRotY - rotY) * 0.05;
+      rotX += (targetRotX - rotX) * 0.05;
+
+      // Draw ground grid plane in 3D
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.06)';
       ctx.lineWidth = 1;
-      projected.forEach((p1, idx) => {
-        if (p1.ringIdx >= activeRingsLimit) return; // scroll construction check
-        
-        // 1. Ring horizontal connections
-        const nextIdx = p1.nodeIdx === p1.count - 1 ? idx - p1.count + 1 : idx + 1;
-        const p2 = projected[nextIdx];
-        if (p2 && p2.ringIdx < activeRingsLimit) {
-          ctx.strokeStyle = `rgba(0, 240, 255, ${0.15 + (p1.zDepth + 200)/1000})`;
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.stroke();
+      for (let g = -180; g <= 180; g += 60) {
+        // Grid lines parallel to Z
+        let p1 = project(g, -90, -180, cX, cY, rotX, rotY, scale, dist);
+        let p2 = project(g, -90, 180, cX, cY, rotX, rotY, scale, dist);
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+        // Grid lines parallel to X
+        let p3 = project(-180, -90, g, cX, cY, rotX, rotY, scale, dist);
+        let p4 = project(180, -90, g, cX, cY, rotX, rotY, scale, dist);
+        ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.stroke();
+      }
+
+      // Define 3 Wireframe Buildings
+      // Each building has: offsetX, offsetZ, sizeW, sizeL, maxFloors, floorHeight
+      const buildings = [
+        { x: -110, z: -50, w: 45, l: 45, floors: 7, fh: 30, color: 'rgba(0, 240, 255, ', name: 'NORTH_TOWER' },
+        { x: 0,    z: 20,  w: 55, l: 55, floors: 9, fh: 32, color: 'rgba(255, 107, 0, ', name: 'MAIN_ATRIUM' },
+        { x: 110,  z: -60, w: 40, l: 40, floors: 6, fh: 28, color: 'rgba(0, 230, 118, ', name: 'EAST_WING' }
+      ];
+
+      // Draw each tower
+      buildings.forEach(b => {
+        // Dynamic growth factor based on scroll percentage (rises up as user scrolls)
+        const scrollFactor = Math.min(1.0, scrollPercent * 1.8 + 0.35); // base height + scroll growth
+        const currentFloors = Math.ceil(b.floors * scrollFactor);
+
+        // Generate building wireframe nodes
+        const nodes = [];
+        for (let f = 0; f <= currentFloors; f++) {
+          const yVal = -90 + (f * b.fh);
+          nodes.push([
+            { x: b.x - b.w/2, y: yVal, z: b.z - b.l/2 }, // front-left
+            { x: b.x + b.w/2, y: yVal, z: b.z - b.l/2 }, // front-right
+            { x: b.x + b.w/2, y: yVal, z: b.z + b.l/2 }, // back-right
+            { x: b.x - b.w/2, y: yVal, z: b.z + b.l/2 }  // back-left
+          ]);
         }
-        
-        // 2. Rib vertical connections to next ring
-        if (p1.ringIdx < 5) {
-          const nextRingFirstIdx = domeNodes.findIndex(n => n.ringIdx === p1.ringIdx + 1);
-          const nextRingCount = domeNodes.filter(n => n.ringIdx === p1.ringIdx + 1).length;
-          
-          if (nextRingFirstIdx !== -1) {
-            // Find closest matching node in next ring
-            const ratio = p1.nodeIdx / p1.count;
-            const targetNodeIdx = Math.round(ratio * nextRingCount) % nextRingCount;
-            const p3 = projected[nextRingFirstIdx + targetNodeIdx];
-            
-            if (p3 && p3.ringIdx < activeRingsLimit) {
-              ctx.strokeStyle = `rgba(255, 107, 0, ${0.12 + (p1.zDepth + 200)/1000})`;
+
+        // Project nodes to 2D screen coordinates
+        const projectedNodes = nodes.map(floor => 
+          floor.map(n => project(n.x, n.y, n.z, cX, cY, rotX, rotY, scale, dist))
+        );
+
+        // Draw horizontal floor slab rings & column lines
+        projectedNodes.forEach((floor, fIdx) => {
+          // Calculate opacity based on floor depth
+          const depthAvg = floor.reduce((sum, n) => sum + n.depth, 0) / 4;
+          const alpha = Math.max(0.1, 0.45 + (depthAvg + 150) / 1000);
+
+          ctx.strokeStyle = `${b.color}${alpha})`;
+          ctx.lineWidth = fIdx === 0 || fIdx === currentFloors ? 2 : 1;
+
+          // Draw floor slab perimeter square
+          ctx.beginPath();
+          ctx.moveTo(floor[0].x, floor[0].y);
+          ctx.lineTo(floor[1].x, floor[1].y);
+          ctx.lineTo(floor[2].x, floor[2].y);
+          ctx.lineTo(floor[3].x, floor[3].y);
+          ctx.closePath();
+          ctx.stroke();
+
+          // Draw column lines connecting this floor to the next floor
+          if (fIdx < currentFloors) {
+            const nextFloor = projectedNodes[fIdx + 1];
+            ctx.lineWidth = 1;
+            for (let c = 0; c < 4; c++) {
               ctx.beginPath();
-              ctx.moveTo(p1.x, p1.y);
-              ctx.lineTo(p3.x, p3.y);
+              ctx.moveTo(floor[c].x, floor[c].y);
+              ctx.lineTo(nextFloor[c].x, nextFloor[c].y);
               ctx.stroke();
             }
+
+            // Draw diagonal shear bracing wireframe lines on side faces at odd floors
+            if (fIdx % 2 === 1) {
+              ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.25})`;
+              for (let c = 0; c < 4; c++) {
+                const nextC = (c + 1) % 4;
+                ctx.beginPath();
+                ctx.moveTo(floor[c].x, floor[c].y);
+                ctx.lineTo(nextFloor[nextC].x, nextFloor[nextC].y);
+                ctx.stroke();
+              }
+              ctx.strokeStyle = `${b.color}${alpha})`; // restore building color
+            }
+          }
+        });
+
+        // Draw roof top truss apex
+        if (currentFloors > 0) {
+          const topFloor = projectedNodes[currentFloors];
+          const apex3D = { x: b.x, y: -90 + (currentFloors * b.fh) + b.fh * 0.7, z: b.z };
+          const apex = project(apex3D.x, apex3D.y, apex3D.z, cX, cY, rotX, rotY, scale, dist);
+
+          ctx.strokeStyle = 'rgba(255, 235, 59, 0.6)';
+          ctx.lineWidth = 1.2;
+          for (let c = 0; c < 4; c++) {
+            ctx.beginPath();
+            ctx.moveTo(topFloor[c].x, topFloor[c].y);
+            ctx.lineTo(apex.x, apex.y);
+            ctx.stroke();
           }
         }
-      });
-      
-      // Draw nodes
-      let closestNode = null;
-      let minDist = 40;
-      
-      projected.forEach(p => {
-        if (p.ringIdx >= activeRingsLimit) return;
-        
-        // Node point size based on depth
-        const radius = Math.max(1.5, 2.5 + p.zDepth * 0.005);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-        
-        // Check mouse proximity
-        if (mouse.active) {
-          const dx = p.x - mouse.x;
-          const dy = p.y - mouse.y;
-          const d = Math.sqrt(dx*dx + dy*dy);
-          if (d < minDist) {
-            minDist = d;
-            closestNode = p;
-          }
+
+        // Draw floating text annotation labels near rooftops
+        const roofNode = projectedNodes[currentFloors][0];
+        if (roofNode) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.font = '8px JetBrains Mono';
+          ctx.fillText(`${b.name} (${(currentFloors * 3.5).toFixed(1)}m)`, roofNode.x, roofNode.y - 10);
         }
-        
-        ctx.fillStyle = p.ringIdx === activeRingsLimit - 1 ? 'rgba(255, 107, 0, 0.7)' : 'rgba(0, 240, 255, 0.6)';
-        ctx.fill();
       });
-      
-      // Highlight nearest node & draw vector analysis line
-      if (closestNode) {
-        ctx.save();
-        ctx.strokeStyle = 'var(--accent-orange)';
-        ctx.lineWidth = 1.5;
-        
-        // Highlight circle
-        ctx.beginPath();
-        ctx.arc(closestNode.x, closestNode.y, 8, 0, Math.PI * 2);
-        ctx.stroke();
-        
-        // Load line pointing down
-        ctx.strokeStyle = 'rgba(255, 107, 0, 0.7)';
-        ctx.beginPath();
-        ctx.moveTo(closestNode.x, closestNode.y);
-        ctx.lineTo(closestNode.x, closestNode.y + 40);
-        ctx.stroke();
-        
-        // Vector arrow head
-        ctx.fillStyle = 'rgba(255, 107, 0, 0.9)';
-        ctx.beginPath();
-        ctx.moveTo(closestNode.x - 4, closestNode.y + 32);
-        ctx.lineTo(closestNode.x, closestNode.y + 40);
-        ctx.lineTo(closestNode.x + 4, closestNode.y + 32);
-        ctx.fill();
-        
-        // Analysis readout labels
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '9px JetBrains Mono';
-        ctx.fillText(`Node ID: R${closestNode.ringIdx}-N${closestNode.nodeIdx}`, closestNode.x + 12, closestNode.y - 12);
-        ctx.fillStyle = 'var(--accent-cyan)';
-        ctx.fillText(`Force: ${(350 + closestNode.zDepth * 0.5).toFixed(0)} kN`, closestNode.x + 12, closestNode.y + 2);
-        ctx.fillText(`Moment: ${(24 + closestNode.zDepth * 0.05).toFixed(1)} kNm`, closestNode.x + 12, closestNode.y + 14);
-        ctx.restore();
-      }
-      
-      // 3D HUD readouts
+
+      // Renders structural dashboard telemetry overlays
       ctx.save();
       ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
       ctx.font = '9px JetBrains Mono';
-      ctx.fillText(`MODEL: DOME_BLUEPRINT_3D`, 20, height - 70);
-      ctx.fillText(`SCALE: ${scale.toFixed(2)}x`, 20, height - 55);
-      ctx.fillText(`CONSTRUCTION LEVEL: ${Math.round(scrollPercent * 100)}%`, 20, height - 40);
+      ctx.fillText(`CAD VIEW: GLOBAL_TOWNSHIP_WIREFRAME`, 20, height - 70);
+      ctx.fillText(`SCROLL ERECTION FACTOR: ${(scrollPercent * 100).toFixed(0)}%`, 20, height - 55);
+      ctx.fillText(`GRID ROTATION Y: ${rotY.toFixed(2)}rad`, 20, height - 40);
       ctx.restore();
     };
-    
+
     canvas.addEventListener('mousemove', (e) => {
       const rect = canvas.getBoundingClientRect();
       mouse.x = e.clientX - rect.left;
       mouse.y = e.clientY - rect.top;
       mouse.active = true;
     });
-    
+
     canvas.addEventListener('mouseleave', () => {
       mouse.active = false;
     });
-    
+
     const animate = () => {
-      drawDome();
+      drawBuildings();
       requestAnimationFrame(animate);
     };
-    
+
     window.addEventListener('resize', resize);
     resize();
     animate();
