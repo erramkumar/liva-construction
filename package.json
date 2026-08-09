@@ -1,0 +1,10 @@
+{
+  "name": "civic-cad-studio",
+  "version": "1.0.0",
+  "description": "CivicCAD Studio - Advanced Structural Analysis & Quantities Portal",
+  "main": "app.js",
+  "scripts": {
+    "dev": "npx -y http-server -p 8080"
+  },
+  "dependencies": {}
+}
