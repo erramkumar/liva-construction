@@ -619,8 +619,24 @@
                 </div>
 
                 <div class="input-group">
+                  <label class="input-label">Project Sector & Environment</label>
+                  <select id="input-pile-sector" style="width: 100%;">
+                    <option value="onshore" selected>Onshore (Residential / Commercial / Industrial)</option>
+                    <option value="offshore">Offshore / Marine (Ports, Jetties, Infrastructure)</option>
+                  </select>
+                </div>
+
+                <div class="input-group" id="group-pile-scour" style="display: none;">
+                  <div class="input-label">
+                    <span>Soil Scour Depth ($d_s$)</span>
+                    <span class="input-val" id="val-pile-scour">3.0 m</span>
+                  </div>
+                  <input type="range" id="input-pile-scour" min="0" max="8" step="0.5" value="3.0">
+                </div>
+
+                <div class="input-group">
                   <label class="input-label">Soil Stratum Model</label>
-                  <select id="input-pile-soiltype">
+                  <select id="input-pile-soiltype" style="width: 100%;">
                     <option value="clayey" selected>Uniform Clay (IS 2911 Alpha-method)</option>
                     <option value="sandy">Uniform Sand (IS 2911 Beta-method)</option>
                     <option value="layered">Layered Clay-Sand Stratum</option>
@@ -632,6 +648,14 @@
               <div id="pile-struct-inputs" style="display: none;">
                 <h3 class="panel-title">Circular RC Section Properties</h3>
                 
+                <div class="input-group">
+                  <label class="input-label">Project Application Sector</label>
+                  <select id="input-pile-sector-struct" style="width: 100%;">
+                    <option value="onshore" selected>Onshore Buildings / Warehouses</option>
+                    <option value="offshore">Offshore / Marine Structure (Fender/Jetty)</option>
+                  </select>
+                </div>
+
                 <div class="input-group">
                   <label class="input-label">Geometry Details</label>
                   <div style="display: flex; gap: 8px; margin-bottom: 8px;">

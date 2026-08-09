@@ -18,6 +18,11 @@ export class PileSolver {
     this.structOutputsDiv = document.getElementById('pile-struct-outputs');
 
     // Bind Geotechnical Inputs
+    this.inputSector = document.getElementById('input-pile-sector');
+    this.groupScour = document.getElementById('group-pile-scour');
+    this.inputScour = document.getElementById('input-pile-scour');
+    this.valScour = document.getElementById('val-pile-scour');
+
     this.inputDia = document.getElementById('input-pile-dia');
     this.inputLen = document.getElementById('input-pile-len');
     this.inputC = document.getElementById('input-pile-c');
@@ -40,6 +45,7 @@ export class PileSolver {
     this.geoStatusBanner = document.getElementById('pile-geo-status-banner');
 
     // Bind Structural Inputs
+    this.inputSectorStruct = document.getElementById('input-pile-sector-struct');
     this.inputDiaStruct = document.getElementById('input-pile-dia-struct');
     this.inputLenStruct = document.getElementById('input-pile-len-struct');
     this.inputCover = document.getElementById('input-pile-cover');
@@ -116,9 +122,21 @@ export class PileSolver {
       this.activeMode = 'structural';
       this.geoInputsDiv.style.display = 'none';
       this.structInputsDiv.style.display = 'block';
-      this.geoOutputsDiv.style.display = 'none';
-      this.structOutputsDiv.style.display = 'flex';
+      this.geoOutputsDiv.style.display = 'flex';
+      this.structOutputsDiv.style.display = 'none';
       this.resizeCanvas();
+      update();
+    });
+
+    // Sector Selection toggle
+    this.inputSector.addEventListener('change', () => {
+      const isOffshore = this.inputSector.value === 'offshore';
+      this.groupScour.style.display = isOffshore ? 'block' : 'none';
+      update();
+    });
+
+    this.inputScour.addEventListener('input', (e) => {
+      this.valScour.textContent = `${parseFloat(e.target.value).toFixed(1)} m`;
       update();
     });
 
@@ -146,10 +164,12 @@ export class PileSolver {
     this.inputSoil.addEventListener('change', update);
 
     // Structural Inputs events
-    [this.inputDiaStruct, this.inputLenStruct, this.inputCover, this.inputKeff,
+    [this.inputSectorStruct, this.inputDiaStruct, this.inputLenStruct, this.inputCover, this.inputKeff,
      this.inputNb, this.inputDiaMain, this.inputNpb, this.inputConcrete].forEach(el => {
-      el.addEventListener('input', update);
-      el.addEventListener('change', update);
+      if (el) {
+        el.addEventListener('input', update);
+        el.addEventListener('change', update);
+      }
     });
 
     this.cases.forEach(c => {
@@ -184,28 +204,17 @@ export class PileSolver {
   getAlpha(c) {
     if (c <= 25) return 1.0;
     if (c >= 150) return 0.4;
-    // Interpolations
-    if (c <= 50) {
-      return 1.0 - ((c - 25) / 25) * 0.3; // 1.0 to 0.7
-    }
-    if (c <= 100) {
-      return 0.7 - ((c - 50) / 50) * 0.25; // 0.7 to 0.45
-    }
-    return 0.45 - ((c - 100) / 50) * 0.05; // 0.45 to 0.40
+    if (c <= 50) return 1.0 - ((c - 25) / 25) * 0.3;
+    if (c <= 100) return 0.7 - ((c - 50) / 50) * 0.25;
+    return 0.45 - ((c - 100) / 50) * 0.05;
   }
 
   // IS 2911 / Berezantsev Nq factor based on phi
   getNq(phi) {
     if (phi <= 25) return 10 + (phi - 25) * 2.2;
-    if (phi <= 30) {
-      return 10 + ((phi - 25) / 5) * 11; // 10 to 21
-    }
-    if (phi <= 35) {
-      return 21 + ((phi - 30) / 5) * 27; // 21 to 48
-    }
-    if (phi <= 40) {
-      return 48 + ((phi - 35) / 5) * 47; // 48 to 95
-    }
+    if (phi <= 30) return 10 + ((phi - 25) / 5) * 11;
+    if (phi <= 35) return 21 + ((phi - 30) / 5) * 27;
+    if (phi <= 40) return 48 + ((phi - 35) / 5) * 47;
     return 95 + (phi - 40) * 15;
   }
 
@@ -218,8 +227,11 @@ export class PileSolver {
   }
 
   solveGeotechnical() {
+    const isOffshore = this.inputSector.value === 'offshore';
+    const scour = isOffshore ? parseFloat(this.inputScour.value) : 0;
+
     const d_mm = parseFloat(this.inputDia.value) || 1000;
-    const L = parseFloat(this.inputLen.value) || 18.5;
+    const L_total = parseFloat(this.inputLen.value) || 18.5;
     const c = parseFloat(this.inputC.value) || 40;
     const phi = parseFloat(this.inputPhi.value) || 28;
     const P_applied = parseFloat(this.inputLoad.value) || 450;
@@ -227,74 +239,58 @@ export class PileSolver {
     
     const d = d_mm / 1000; // m
     const Ap = (Math.PI / 4) * d * d; // base area m^2
-    const As = Math.PI * d * L;       // shaft area m^2
+    
+    // In offshore structures, skin friction is zero in the scour zone
+    const L_eff = Math.max(0.5, L_total - scour); // effective length embedded in soil
+    const As_eff = Math.PI * d * L_eff;           // effective shaft area m^2
     
     let Qb = 0;
     let Qs = 0;
     const gamma = 18; // Soil bulk density kN/m^3
     
     if (soilType === 'clayey') {
-      // Cohesive soil (IS 2911 Part 1 Section 1)
-      // Base capacity Qb = Nc * c * Ap (Nc = 9.0)
       Qb = 9.0 * c * Ap;
-      
-      // Skin Friction Qs = alpha * c * As
       const alpha = this.getAlpha(c);
-      Qs = alpha * c * As;
+      Qs = alpha * c * As_eff;
     } else if (soilType === 'sandy') {
-      // Cohesionless soil
-      // Critical Depth limit L_cr = 20d
       const Lcr = 20 * d;
-      
-      // End bearing base stress cap at L_cr
-      const baseStress = gamma * Math.min(L, Lcr);
+      const baseStress = gamma * Math.min(L_eff, Lcr);
       const Nq = this.getNq(phi);
-      // Base resistance stress qp = baseStress * Nq (capped at 10000 kPa)
       const qp = Math.min(baseStress * Nq, 10000);
       Qb = qp * Ap;
       
-      // Skin friction average stress integrated along shaft with Lcr cap
       const Ks = 1.0;
       const deltaRad = (0.75 * phi * Math.PI) / 180;
       
       let averageOverburden = 0;
-      if (L <= Lcr) {
-        averageOverburden = (gamma * L) / 2;
+      if (L_eff <= Lcr) {
+        averageOverburden = (gamma * L_eff) / 2;
       } else {
-        averageOverburden = gamma * Lcr * (1.0 - Lcr / (2 * L));
+        averageOverburden = gamma * Lcr * (1.0 - Lcr / (2 * L_eff));
       }
       
-      // Skin friction stress fs = Ks * avgOverburden * tan(delta) (capped at 100 kPa)
       const fs = Math.min(Ks * averageOverburden * Math.tan(deltaRad), 100);
-      Qs = fs * As;
+      Qs = fs * As_eff;
     } else if (soilType === 'layered') {
-      // Top half clay (0 to L/2), bottom half sand (L/2 to L)
-      // Base lies in sandy stratum
+      // Top half is clay, bottom half is sand
       const Lcr = 20 * d;
-      const baseStress = gamma * Math.min(L, Lcr);
+      const baseStress = gamma * Math.min(L_eff, Lcr);
       const Nq = this.getNq(phi);
       const qp = Math.min(baseStress * Nq, 10000);
       Qb = qp * Ap;
       
-      // Top half Clay skin friction
-      const As_clay = Math.PI * d * (L / 2);
+      // Calculate split zones in the remaining embedded length
+      const halfL = L_eff / 2;
+      const As_clay = Math.PI * d * halfL;
+      const As_sand = Math.PI * d * halfL;
+      
       const alpha = this.getAlpha(c);
       const Qs_clay = alpha * c * As_clay;
       
-      // Bottom half Sand skin friction
-      const As_sand = Math.PI * d * (L / 2);
       const Ks = 1.0;
       const deltaRad = (0.75 * phi * Math.PI) / 180;
-      
-      // Average overburden stress for bottom half
-      let avgStressSand = 0;
-      const zMid = L * 0.75; // midpoint of sand layer
-      if (zMid <= Lcr) {
-        avgStressSand = gamma * zMid;
-      } else {
-        avgStressSand = gamma * Lcr;
-      }
-      
+      const zMid = L_eff * 0.75;
+      const avgStressSand = zMid <= Lcr ? gamma * zMid : gamma * Lcr;
       const fs_sand = Math.min(Ks * avgStressSand * Math.tan(deltaRad), 100);
       const Qs_sand = fs_sand * As_sand;
       
@@ -302,41 +298,51 @@ export class PileSolver {
     }
     
     const Qu = Qb + Qs;
-    const Fos = 2.5;
+    const Fos = isOffshore ? 2.0 : 2.5; // Offshore design codes allow FOS = 2.0 for extreme load combinations
     const Qall = Qu / Fos;
     
-    // Update geotechnical results tables
     this.resQb.textContent = `${Qb.toFixed(1)} kN`;
     this.resQs.textContent = `${Qs.toFixed(1)} kN`;
     this.resQu.textContent = `${Qu.toFixed(1)} kN`;
-    this.resQall.textContent = `${Qall.toFixed(1)} kN`;
+    this.resQall.textContent = `${Qall.toFixed(1)} kN (FOS=${Fos})`;
     
     if (P_applied > Qall) {
       this.geoStatusBanner.className = 'alert-banner alert-danger';
       this.geoStatusBanner.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"></path></svg>
-        <span>Warning: Applied Load (${P_applied.toFixed(0)} kN) exceeds Allowable Capacity (${Qall.toFixed(1)} kN)!</span>
+        <span>Warning: Applied Load (${P_applied.toFixed(0)} kN) exceeds allowable ${isOffshore ? 'Offshore' : 'Onshore'} capacity (${Qall.toFixed(1)} kN)!</span>
       `;
     } else {
       this.geoStatusBanner.className = 'alert-banner alert-success';
       this.geoStatusBanner.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        <span>Safe: Applied Load is within geotechnical capacity.</span>
+        <span>Safe: Pile geotechnical capacity is adequate for ${isOffshore ? 'Offshore/Marine' : 'Onshore'} service.</span>
       `;
     }
     
     this.currentQall = Qall;
     this.currentP = P_applied;
     this.d = d;
-    this.pileL = L;
+    this.pileL = L_total;
+    this.scour = scour;
+    this.isOffshore = isOffshore;
     
     this.draw();
   }
 
   solveStructural() {
+    const isOffshoreStruct = this.inputSectorStruct.value === 'offshore';
+
     const D = parseFloat(this.inputDiaStruct.value) || 1400; // mm
+    let Cc = parseFloat(this.inputCover.value) || 75; // mm
+    
+    // Offshore/marine minimum cover validation
+    if (isOffshoreStruct && Cc < 75) {
+      Cc = 75; // force marine code cover limit
+      this.inputCover.value = 75;
+    }
+
     const Ls = parseFloat(this.inputLenStruct.value) || 14.0; // m
-    const Cc = parseFloat(this.inputCover.value) || 75; // mm
     const Keff = parseFloat(this.inputKeff.value) || 1.2;
     const nb = parseInt(this.inputNb.value) || 66;
     const dm = parseFloat(this.inputDiaMain.value) || 32; // mm
@@ -352,7 +358,6 @@ export class PileSolver {
     const d = D - Cc - dm / 2 - ds;
     const dpD = (Cc + dm / 2 + ds) / D;
     
-    // Balanced capacity interpolation
     const t = Math.max(0, Math.min(1, (dpD - 0.05) / 0.05));
     const k1 = 0.172 + t * (0.160 - 0.172);
     const k2 = 0.543 + t * (0.443 - 0.543);
@@ -369,7 +374,6 @@ export class PileSolver {
       const V = parseFloat(c.v.value) || 0;
       
       const emin = Math.max(Ls * 1000 / 500 + D / 30, 20);
-      
       const Le = Keff * Ls;
       const lam = (Le * 1000) / D;
       let Madd = 0;
@@ -399,8 +403,7 @@ export class PileSolver {
       const Mu1 = Coeff * fck * Math.pow(D, 3) * 1e-6;
       const IR = Math.pow(Mu / Mu1, alpha_n);
       
-      // Dynamic Crack Width (IS 456 Annex F)
-      // Service loads are approximately factored load / 1.3
+      // Crack Width calculation
       const P_service = Pu / 1.3;
       const M_service = Mu / 1.3;
       
@@ -408,18 +411,14 @@ export class PileSolver {
       const Es = 200000;
       const mr = Es / Ec;
       
-      const Puz_val = (0.45 * fck * Ac + 0.75 * fy * Asc) * 1e-3; // kN
+      const Puz_val = (0.45 * fck * Ac + 0.75 * fy * Asc) * 1e-3;
       const k_nc = Math.max(0.2, Math.min(0.6, 0.45 + 0.135 * (P_service / Puz_val)));
       const d_nc = k_nc * d;
       
-      // Maximum concrete compressive stress under service loads
-      const Ig = (Math.PI * Math.pow(D, 4)) / 64; // Gross moment of inertia mm^4
-      const sig_cbca = (P_service * 1e3 / Ac) + (M_service * 1e6 * (D / 2) / Ig); // MPa
+      const Ig = (Math.PI * Math.pow(D, 4)) / 64;
+      const sig_cbca = (P_service * 1e3 / Ac) + (M_service * 1e6 * (D / 2) / Ig);
+      const sig_st = Math.max(10, (mr * sig_cbca * (d - d_nc)) / d_nc);
       
-      // Steel tensile stress
-      const sig_st = Math.max(10, (mr * sig_cbca * (d - d_nc)) / d_nc); // MPa
-      
-      // Spacing of reinforcement bundles at the outer face
       const numBundles_val = Math.ceil(nb / npb);
       const C_o = (Math.PI * D) / numBundles_val - 2 * dm;
       const C_min = Cc + ds;
@@ -428,7 +427,6 @@ export class PileSolver {
       const a_cr1 = C_min;
       const a_cr2 = Math.sqrt(a_cr1 * a_cr1 + Math.pow(C_o / 2, 2));
       
-      // tension stiffening strain offset a_1
       const a_1 = (D * (D - d_nc)) / (3 * Es * Asc * h_1);
       const eps_1 = (sig_st / Es) * (D - d_nc) / (h_1 - d_nc);
       const eps_m = Math.max(1e-6, eps_1 - a_1);
@@ -452,7 +450,6 @@ export class PileSolver {
       });
     });
     
-    // Update structural results labels
     this.c1Ir.textContent = results[0].ir.toFixed(2);
     this.c2Ir.textContent = results[1].ir.toFixed(2);
     this.c3Ir.textContent = results[2].ir.toFixed(2);
@@ -475,16 +472,19 @@ export class PileSolver {
     });
     
     this.worstCaseLbl.textContent = `CASE ${worstIdx + 1}`;
+    
+    // Marine allowable crack width is 0.2mm, while onshore can go up to 0.3mm (IS 456 / IS 2911 Part 2)
+    const limitCW = isOffshoreStruct ? 0.2 : 0.3;
     const worstRes = results[worstIdx];
-    const isSafe = (worstRes.ir <= 1.0) && (worstRes.cw <= 0.2) && (worstRes.sv <= 1.0);
+    const isSafe = (worstRes.ir <= 1.0) && (worstRes.cw <= limitCW) && (worstRes.sv <= 1.0);
     
     if (isSafe) {
       this.statusBanner.className = 'badge-ok';
-      this.finalCheckLbl.textContent = 'SAFE (PASS)';
+      this.finalCheckLbl.textContent = `SAFE (PASS) [CW Limit=${limitCW}mm]`;
       this.finalCheckLbl.style.color = 'var(--accent-green)';
     } else {
       this.statusBanner.className = 'badge-worst';
-      this.finalCheckLbl.textContent = 'NOT O.K. (REVISE)';
+      this.finalCheckLbl.textContent = `NOT O.K. (REVISE) [CW Limit=${limitCW}mm]`;
       this.finalCheckLbl.style.color = '#ef4444';
     }
     
@@ -493,6 +493,7 @@ export class PileSolver {
     this.dm = dm;
     this.npb = npb;
     this.Cc = Cc;
+    this.isOffshoreStruct = isOffshoreStruct;
     
     this.draw();
   }
@@ -522,43 +523,51 @@ export class PileSolver {
     
     ctx.clearRect(0, 0, w, h);
     
-    // Soil backgrounds
     const soilType = this.inputSoil.value;
     const marginT = 40;
     const marginB = 60;
     const graphH = h - marginT - marginB;
-    const scaleY = graphH / 30; // 30m depth limit
+    const scaleY = graphH / 30; // 30m limit
     
     const pileL_px = this.pileL * scaleY;
     const pileD_px = Math.max(this.d * scaleY * 4, 12);
     const centerX = w / 2;
     
-    // Render backgrounds
+    // Draw soil backgrounds
     if (soilType === 'clayey') {
       ctx.fillStyle = 'rgba(13, 21, 39, 0.4)';
       ctx.fillRect(0, marginT, w, graphH);
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
-      ctx.lineWidth = 1;
-      for (let y = marginT + 15; y < marginT + graphH; y += 25) {
-        ctx.beginPath();
-        for (let x = 0; x <= w; x += 10) {
-          ctx.lineTo(x, y + Math.sin(x * 0.05) * 4);
-        }
-        ctx.stroke();
-      }
     } else if (soilType === 'sandy') {
       ctx.fillStyle = 'rgba(255, 107, 0, 0.03)';
       ctx.fillRect(0, marginT, w, graphH);
-      ctx.fillStyle = 'rgba(255, 107, 0, 0.07)';
-      for (let i = 0; i < 60; i++) {
-        ctx.fillRect(Math.random() * w, marginT + Math.random() * graphH, 1.5, 1.5);
-      }
     } else {
       const clayH = (this.pileL / 2) * scaleY;
       ctx.fillStyle = 'rgba(13, 21, 39, 0.4)';
       ctx.fillRect(0, marginT, w, clayH);
       ctx.fillStyle = 'rgba(255, 107, 0, 0.03)';
       ctx.fillRect(0, marginT + clayH, w, graphH - clayH);
+    }
+
+    // Draw Soil Scour Zone (Offshore/Marine only)
+    if (this.isOffshore && this.scour > 0) {
+      const scourH_px = this.scour * scaleY;
+      // Draw wavy blue lines for water/scoured zone
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.07)';
+      ctx.fillRect(0, marginT, w, scourH_px);
+      
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, marginT + scourH_px);
+      for (let x = 0; x <= w; x += 15) {
+        ctx.lineTo(x, marginT + scourH_px + Math.sin(x * 0.1) * 3);
+      }
+      ctx.stroke();
+
+      // Label scour zone
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.6)';
+      ctx.font = '9px JetBrains Mono';
+      ctx.fillText(`SCOUR DEPTH: ${this.scour.toFixed(1)}m (NO FRICTION)`, 15, marginT + scourH_px - 8);
     }
     
     // Depth markers
@@ -586,6 +595,14 @@ export class PileSolver {
     ctx.rect(pileL_X, marginT, pileD_px, pileL_px);
     ctx.fill();
     ctx.stroke();
+
+    // Offshore MS Liner indicator
+    if (this.isOffshore) {
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.45)';
+      ctx.fillRect(pileL_X - 2, marginT, pileD_px + 4, Math.min(pileL_px, 20 * scaleY));
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeRect(pileL_X - 2, marginT, pileD_px + 4, Math.min(pileL_px, 20 * scaleY));
+    }
     
     // Pile Cap
     ctx.fillStyle = '#475569';
@@ -634,8 +651,8 @@ export class PileSolver {
     
     // Concrete Outline
     ctx.fillStyle = 'rgba(148, 163, 184, 0.06)';
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = this.isOffshoreStruct ? 'var(--accent-cyan)' : '#94a3b8';
+    ctx.lineWidth = this.isOffshoreStruct ? 3 : 2.5;
     ctx.beginPath();
     ctx.arc(cX, cY, rPile, 0, Math.PI * 2);
     ctx.fill();
@@ -678,6 +695,13 @@ export class PileSolver {
     ctx.moveTo(cX - rPile - 10, cY); ctx.lineTo(cX + rPile + 10, cY);
     ctx.moveTo(cX, cY - rPile - 10); ctx.lineTo(cX, cY + rPile + 10);
     ctx.stroke();
+
+    // Sector watermark text in drawing canvas
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.font = '8px JetBrains Mono';
+    ctx.fillText(this.isOffshoreStruct ? 'OFFSHORE marine cage' : 'ONSHORE foundation cage', 15, h - 15);
+    ctx.restore();
   }
 
   destroy() {
@@ -686,3 +710,4 @@ export class PileSolver {
     }
   }
 }
+export default PileSolver;
