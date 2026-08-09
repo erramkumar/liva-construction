@@ -56,6 +56,7 @@ export class QuantityEstimator {
     // BOQ Table and controls
     this.boqTableBody = document.getElementById('boq-table-body');
     this.resTotal = document.getElementById('res-boq-total');
+    this.btnDownloadExcel = document.getElementById('btn-download-excel');
     this.btnClearBOQ = document.getElementById('btn-clear-boq');
 
     // Canvas
@@ -70,9 +71,18 @@ export class QuantityEstimator {
     this.rotX = -0.3;
     this.time = 0;
 
+    // Load initial default items into custom BOQ list
+    this.boqItems = [
+      { desc: 'Boring, providing and casting M35 Bored Cast-in-Situ Pile 600mm Dia', qty: 156.0, unit: 'Rmt', rate: 28000 },
+      { desc: 'Providing and casting M35 Concrete Pile Muff (1200x1200x600 mm)', qty: 12.0, unit: 'Nos', rate: 45000 },
+      { desc: 'Providing and casting M35 precast concrete longitudinal and cross beams', qty: 32.5, unit: 'Cum', rate: 65000 },
+      { desc: 'Providing and laying precast concrete slab panels (M35)', qty: 37.5, unit: 'Cum', rate: 55000 }
+    ];
+
     this.initEvents();
     this.resizeCanvas();
     this.calculateTakeoff();
+    this.renderBOQTable();
     this.animate();
   }
 
@@ -151,6 +161,9 @@ export class QuantityEstimator {
       this.addBoqQty.value = '1.0';
     });
 
+    // Download BOQ as Excel / CSV
+    this.btnDownloadExcel.addEventListener('click', () => this.downloadExcel());
+
     // Clear BOQ
     this.btnClearBOQ.addEventListener('click', () => {
       this.boqItems = [];
@@ -165,6 +178,38 @@ export class QuantityEstimator {
     this.canvas.width = rect.width * window.devicePixelRatio;
     this.canvas.height = rect.height * window.devicePixelRatio;
     this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  }
+
+  // Generates clean CSV formatted table which Excel reads directly
+  downloadExcel() {
+    if (this.boqItems.length === 0) {
+      alert("No items in BOQ table yet!");
+      return;
+    }
+
+    let csvContent = "\uFEFF"; // Byte Order Mark to preserve regional currency symbols
+    csvContent += "LIVA CONSTRUCTION - BILL OF QUANTITIES ESTIMATION\n";
+    csvContent += "Date: " + new Date().toLocaleDateString() + "\n\n";
+    csvContent += "S.No,Description of Work,Quantity,Unit,Rate (INR),Amount (INR)\n";
+    
+    let totalAmt = 0;
+    this.boqItems.forEach((item, idx) => {
+      const amt = item.qty * item.rate;
+      totalAmt += amt;
+      const cleanDesc = item.desc.replace(/"/g, '""');
+      csvContent += `${idx + 1},"${cleanDesc}",${item.qty.toFixed(2)},${item.unit},${item.rate.toFixed(2)},${amt.toFixed(2)}\n`;
+    });
+    
+    csvContent += `,,,,,Total: INR ${totalAmt.toFixed(2)}\n`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "LIVA_BOQ_Takeoff_Estimate.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   calculateTakeoff() {
@@ -193,11 +238,9 @@ export class QuantityEstimator {
       const concreteVol = (Math.PI * Math.pow(dia / 1000, 2) / 4) * len;
 
       // 2. Main Reinforcement Bars weight (MT)
-      // weight = count * length * cross-section area * density
-      // lap embedment is typically +1m
       const mainLen = len + 1.0; 
       const mainSteelVol = mainCount * mainLen * (Math.PI * Math.pow(mainDia / 1000, 2) / 4);
-      const mainSteelWt = mainSteelVol * 7.85; // Metric Tons
+      const mainSteelWt = mainSteelVol * 7.85; // MT
 
       // 3. Helical / Spiral Reinforcement weight (MT)
       const helixDia = (dia - 2 * cover - helicalDia) / 1000; // m
@@ -230,7 +273,7 @@ export class QuantityEstimator {
         { label: 'Total Steel Weight (With Liner)', val: `${(grandSteelWt * 1000).toFixed(1)} kg`, bold: true }
       ];
 
-      appliedQty = len; // typically bored piles are paid per Rmt boring
+      appliedQty = len; 
       appliedUnit = 'Rmt';
       appliedDesc = `Boring, providing and casting M35 Bored Cast-in-Situ Pile ${dia}mm Dia, L=${len}m`;
     }
@@ -316,11 +359,11 @@ export class QuantityEstimator {
 
   renderBOQTable() {
     this.boqTableBody.innerHTML = '';
-    let totalAmt = 0;
+    let total = 0;
 
     this.boqItems.forEach((item, idx) => {
       const amt = item.qty * item.rate;
-      totalAmt += amt;
+      total += amt;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -329,16 +372,17 @@ export class QuantityEstimator {
         <td>${item.qty.toFixed(2)}</td>
         <td>${item.unit}</td>
         <td>Rs ${item.rate.toLocaleString('en-IN')}</td>
-        <td style="color: var(--accent-cyan); font-weight:500;">Rs ${amt.toLocaleString('en-IN')}</td>
+        <td style="color: var(--accent-cyan); font-weight: 500;">Rs ${amt.toLocaleString('en-IN')}</td>
       `;
+      
       this.boqTableBody.appendChild(tr);
     });
 
-    this.resTotal.textContent = `Rs ${totalAmt.toLocaleString('en-IN')} (${(totalAmt / 100000).toFixed(2)} Lakhs)`;
+    this.resTotal.textContent = `Rs ${total.toLocaleString('en-IN')} (${(total / 100000).toFixed(2)} Lakhs)`;
   }
 
-  // Draw 3D Detailed Pile Cage (main rebars, spiral coil, stiffeners, liner) on Canvas
-  drawPileCage() {
+  // Draw Pictorial Detail on Canvas
+  drawDetailing() {
     const canvas = this.canvas;
     const ctx = this.ctx;
     const w = canvas.width / window.devicePixelRatio;
@@ -347,23 +391,19 @@ export class QuantityEstimator {
     ctx.clearRect(0, 0, w, h);
 
     const type = this.takeoffElementType.value;
-    const activeOverlay = this.activeOverlay;
-    activeOverlay.style.display = 'block';
-
-    // Rotation factors reacting to mouse coordinates
-    this.rotY = 0.5 + Math.sin(this.time * 0.3) * 0.15;
+    
+    // Rotating projection matrices
+    this.rotY = 0.5 + Math.sin(this.time * 0.35) * 0.2;
     this.rotX = -0.3;
 
     const cX = w / 2;
     const cY = h / 2 + 10;
-    const scale = 1.0 * (w / 400);
+    const scale = 0.95 * (w / 400);
     const dist = 500;
 
     const project3D = (x, y, z) => {
-      // Rotate Y
       let x1 = x * Math.cos(this.rotY) - z * Math.sin(this.rotY);
       let z1 = x * Math.sin(this.rotY) + z * Math.cos(this.rotY);
-      // Rotate X
       let y2 = y * Math.cos(this.rotX) - z1 * Math.sin(this.rotX);
       let z2 = y * Math.sin(this.rotX) + z1 * Math.cos(this.rotX);
       
@@ -373,38 +413,29 @@ export class QuantityEstimator {
     };
 
     if (type === 'pile') {
-      const pDia = parseFloat(this.pileDia.value) || 600;
-      const pLen = parseFloat(this.pileLen.value) || 13;
-      const pMainCount = parseInt(this.pileMainCount.value) || 12;
-      const pCover = parseFloat(this.pileCover.value) || 50;
-      const pLinerLen = parseFloat(this.pileLiner.value) || 2;
-      const pStiffSpacing = parseFloat(this.pileStiffSpacing.value) || 2.0;
+      const cageRadius = 35;
+      const concreteRadius = 45;
 
-      // Pile geometry coordinates scale
-      const cageRadius = 40; // visual representation radius
-      const concreteRadius = 50;
-      const visualHeight = 140;
-
-      // 1. Draw concrete outer cylindrical edge lines
+      // Draw concrete outer boundary with soft wireframe lines
       ctx.strokeStyle = 'rgba(100, 116, 139, 0.12)';
       ctx.lineWidth = 1;
-      const topCircPoints = [];
-      const botCircPoints = [];
+      const topPts = [];
+      const botPts = [];
       for (let theta = 0; theta < Math.PI * 2; theta += 0.2) {
-        topCircPoints.push(project3D(concreteRadius * Math.cos(theta), 80, concreteRadius * Math.sin(theta)));
-        botCircPoints.push(project3D(concreteRadius * Math.cos(theta), -80, concreteRadius * Math.sin(theta)));
+        topPts.push(project3D(concreteRadius * Math.cos(theta), 80, concreteRadius * Math.sin(theta)));
+        botPts.push(project3D(concreteRadius * Math.cos(theta), -80, concreteRadius * Math.sin(theta)));
       }
       ctx.beginPath();
-      ctx.moveTo(topCircPoints[0].x, topCircPoints[0].y);
-      topCircPoints.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.moveTo(topPts[0].x, topPts[0].y);
+      topPts.forEach(p => ctx.lineTo(p.x, p.y));
       ctx.closePath(); ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(botCircPoints[0].x, botCircPoints[0].y);
-      botCircPoints.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.moveTo(botPts[0].x, botPts[0].y);
+      botPts.forEach(p => ctx.lineTo(p.x, p.y));
       ctx.closePath(); ctx.stroke();
 
-      // Side profile lines for concrete boundaries
+      // vertical lines of pile concrete cylinder boundary
       const pLeftTop = project3D(-concreteRadius, 80, 0);
       const pLeftBot = project3D(-concreteRadius, -80, 0);
       const pRightTop = project3D(concreteRadius, 80, 0);
@@ -414,74 +445,64 @@ export class QuantityEstimator {
       ctx.moveTo(pRightTop.x, pRightTop.y); ctx.lineTo(pRightBot.x, pRightBot.y);
       ctx.stroke();
 
-      // 2. Draw MS Liner (top sleeve)
-      const linerHeightLimit = 80 - (pLinerLen / pLen) * 160;
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.22)';
+      // Draw MS Outer Liner (metallic sleeve at top)
+      const linerLimitY = 40;
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.25)';
       ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)';
       ctx.lineWidth = 1.5;
-      
-      const linerTopPts = [];
-      const linerBotPts = [];
+      const linerTop = [];
+      const linerBot = [];
       for (let theta = 0; theta < Math.PI * 2; theta += 0.15) {
-        linerTopPts.push(project3D(concreteRadius * Math.cos(theta), 80, concreteRadius * Math.sin(theta)));
-        linerBotPts.push(project3D(concreteRadius * Math.cos(theta), linerHeightLimit, concreteRadius * Math.sin(theta)));
+        linerTop.push(project3D(concreteRadius * Math.cos(theta), 80, concreteRadius * Math.sin(theta)));
+        linerBot.push(project3D(concreteRadius * Math.cos(theta), linerLimitY, concreteRadius * Math.sin(theta)));
       }
       ctx.beginPath();
-      ctx.moveTo(linerTopPts[0].x, linerTopPts[0].y);
-      linerTopPts.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.moveTo(linerTop[0].x, linerTop[0].y);
+      linerTop.forEach(p => ctx.lineTo(p.x, p.y));
       ctx.closePath(); ctx.fill(); ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(linerBotPts[0].x, linerBotPts[0].y);
-      linerBotPts.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.moveTo(linerBot[0].x, linerBot[0].y);
+      linerBot.forEach(p => ctx.lineTo(p.x, p.y));
       ctx.closePath(); ctx.fill(); ctx.stroke();
 
-      // 3. Draw vertical main reinforcement bars (Green rods)
+      // Main Bars (Green rods)
       ctx.strokeStyle = 'var(--accent-green)';
       ctx.lineWidth = 2.5;
-      
-      for (let i = 0; i < pMainCount; i++) {
-        const theta = (i / pMainCount) * Math.PI * 2;
+      const mainCount = parseInt(this.pileMainCount.value) || 12;
+      for (let i = 0; i < mainCount; i++) {
+        const theta = (i / mainCount) * Math.PI * 2;
         const x = cageRadius * Math.cos(theta);
         const z = cageRadius * Math.sin(theta);
-        
-        const topPt = project3D(x, 85, z); // extends out of top for lap/cap connections
+        const topPt = project3D(x, 85, z);
         const botPt = project3D(x, -80, z);
-        
         ctx.beginPath();
         ctx.moveTo(topPt.x, topPt.y);
         ctx.lineTo(botPt.x, botPt.y);
         ctx.stroke();
       }
 
-      // 4. Draw Helical Spiral Wrapping (wound around main bars)
+      // Helical Spiral ties (orange wound coil)
       ctx.strokeStyle = 'var(--accent-orange)';
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      
       let spiralPts = [];
-      const coilTurns = 28;
-      for (let j = 0; j <= 360 * coilTurns; j += 10) {
+      for (let j = 0; j <= 360 * 20; j += 15) {
         const theta = (j * Math.PI) / 180;
-        const progress = j / (360 * coilTurns); // 0 to 1
+        const progress = j / (360 * 20);
         const yVal = 80 - progress * 160;
-        
-        const pt = project3D(cageRadius * Math.cos(theta), yVal, cageRadius * Math.sin(theta));
-        spiralPts.push(pt);
+        spiralPts.push(project3D(cageRadius * Math.cos(theta), yVal, cageRadius * Math.sin(theta)));
       }
-      
       ctx.moveTo(spiralPts[0].x, spiralPts[0].y);
       spiralPts.forEach(p => ctx.lineTo(p.x, p.y));
       ctx.stroke();
 
-      // 5. Draw Stiffener Bracing Rings (concentric blue rings at intervals)
+      // Stiffener Rings (Cyan hoops)
       ctx.strokeStyle = 'var(--accent-cyan)';
-      ctx.lineWidth = 2;
-      
-      const stiffSpacingVis = (pStiffSpacing / pLen) * 160;
-      for (let yVal = 60; yVal >= -80; yVal -= stiffSpacingVis) {
+      ctx.lineWidth = 2.0;
+      for (let yVal = 60; yVal >= -80; yVal -= 40) {
         ctx.beginPath();
-        for (let theta = 0; theta <= Math.PI * 2 + 0.1; theta += 0.15) {
+        for (let theta = 0; theta <= Math.PI * 2 + 0.1; theta += 0.2) {
           const pt = project3D(cageRadius * Math.cos(theta), yVal, cageRadius * Math.sin(theta));
           if (theta === 0) ctx.moveTo(pt.x, pt.y);
           else ctx.lineTo(pt.x, pt.y);
@@ -490,7 +511,7 @@ export class QuantityEstimator {
       }
     } 
     else if (type === 'muff') {
-      // Draw 3D Isometric Muff Block
+      // 3D Pictorial Pile Cap / Muff Block with embedded steel mesh
       ctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
       ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
       ctx.lineWidth = 1.5;
@@ -499,103 +520,143 @@ export class QuantityEstimator {
       const d = 30;
 
       const v = [
-        project3D(-size, d, -size),
-        project3D(size, d, -size),
-        project3D(size, -d, -size),
-        project3D(-size, -d, -size),
-        project3D(-size, d, size),
-        project3D(size, d, size),
-        project3D(size, -d, size),
-        project3D(-size, -d, size)
+        project3D(-size, d, -size), project3D(size, d, -size), project3D(size, -d, -size), project3D(-size, -d, -size),
+        project3D(-size, d, size), project3D(size, d, size), project3D(size, -d, size), project3D(-size, -d, size)
       ];
 
-      // draw top face
+      // Draw Muff Box faces
       ctx.beginPath();
       ctx.moveTo(v[0].x, v[0].y); ctx.lineTo(v[1].x, v[1].y);
       ctx.lineTo(v[5].x, v[5].y); ctx.lineTo(v[4].x, v[4].y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
 
-      // front face
       ctx.beginPath();
       ctx.moveTo(v[4].x, v[4].y); ctx.lineTo(v[5].x, v[5].y);
       ctx.lineTo(v[6].x, v[6].y); ctx.lineTo(v[7].x, v[7].y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
 
-      // right side face
       ctx.beginPath();
       ctx.moveTo(v[1].x, v[1].y); ctx.lineTo(v[5].x, v[5].y);
       ctx.lineTo(v[6].x, v[6].y); ctx.lineTo(v[2].x, v[2].y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
+
+      // Draw Reinforcement Mesh inside the Muff Block (Green grid)
+      ctx.strokeStyle = 'rgba(0, 230, 118, 0.4)';
+      ctx.lineWidth = 1;
+      for (let offset = -size + 10; offset < size; offset += 15) {
+        // bottom mesh layer in Z direction
+        let pt1 = project3D(offset, -d + 6, -size + 8);
+        let pt2 = project3D(offset, -d + 6, size - 8);
+        ctx.beginPath(); ctx.moveTo(pt1.x, pt1.y); ctx.lineTo(pt2.x, pt2.y); ctx.stroke();
+
+        // bottom mesh layer in X direction
+        let pt3 = project3D(-size + 8, -d + 6, offset);
+        let pt4 = project3D(size - 8, -d + 6, offset);
+        ctx.beginPath(); ctx.moveTo(pt3.x, pt3.y); ctx.lineTo(pt4.x, pt4.y); ctx.stroke();
+      }
     }
     else if (type === 'beam') {
-      // Draw 3D Rectangular Beam Profile
-      ctx.fillStyle = 'rgba(0, 230, 118, 0.08)';
-      ctx.strokeStyle = 'rgba(0, 230, 118, 0.45)';
-      ctx.lineWidth = 1.5;
+      // 3D Pictorial Beam detailing showing stirrup links (orange hoops) and longitudinal reinforcement (green)
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.03)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+      ctx.lineWidth = 1;
 
-      const w = 20;
+      const w = 18;
       const d = 30;
       const l = 100;
 
       const v = [
-        project3D(-l, d, -w),
-        project3D(l, d, -w),
-        project3D(l, -d, -w),
-        project3D(-l, -d, -w),
-        project3D(-l, d, w),
-        project3D(l, d, w),
-        project3D(l, -d, w),
-        project3D(-l, -d, w)
+        project3D(-l, d, -w), project3D(l, d, -w), project3D(l, -d, -w), project3D(-l, -d, -w),
+        project3D(-l, d, w), project3D(l, d, w), project3D(l, -d, w), project3D(-l, -d, w)
       ];
 
-      // Draw top face
+      // Draw outer concrete block profile
       ctx.beginPath();
       ctx.moveTo(v[0].x, v[0].y); ctx.lineTo(v[1].x, v[1].y);
       ctx.lineTo(v[5].x, v[5].y); ctx.lineTo(v[4].x, v[4].y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
 
-      // Front face
       ctx.beginPath();
       ctx.moveTo(v[4].x, v[4].y); ctx.lineTo(v[5].x, v[5].y);
       ctx.lineTo(v[6].x, v[6].y); ctx.lineTo(v[7].x, v[7].y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
+
+      // Main bars (Longitudinal steel)
+      ctx.strokeStyle = 'var(--accent-green)';
+      ctx.lineWidth = 2;
+      [
+        { x: -l, y: -d + 6, z: -w + 5 }, { x: -l, y: -d + 6, z: w - 5 },
+        { x: -l, y: d - 6, z: -w + 5 }, { x: -l, y: d - 6, z: w - 5 }
+      ].forEach(start => {
+        let pStart = project3D(start.x, start.y, start.z);
+        let pEnd = project3D(l, start.y, start.z);
+        ctx.beginPath(); ctx.moveTo(pStart.x, pStart.y); ctx.lineTo(pEnd.x, pEnd.y); ctx.stroke();
+      });
+
+      // Stirrup hoops wrapping the bars (Orange hoops at intervals)
+      ctx.strokeStyle = 'var(--accent-orange)';
+      ctx.lineWidth = 1;
+      for (let offset = -l + 10; offset < l; offset += 20) {
+        const h0 = project3D(offset, -d + 5, -w + 4);
+        const h1 = project3D(offset, d - 5, -w + 4);
+        const h2 = project3D(offset, d - 5, w - 4);
+        const h3 = project3D(offset, -d + 5, w - 4);
+
+        ctx.beginPath();
+        ctx.moveTo(h0.x, h0.y);
+        ctx.lineTo(h1.x, h1.y);
+        ctx.lineTo(h2.x, h2.y);
+        ctx.lineTo(h3.x, h3.y);
+        ctx.closePath();
+        ctx.stroke();
+      }
     }
     else if (type === 'slab') {
-      // Draw Slab panel layering
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.08)';
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
-      ctx.lineWidth = 1.5;
+      // 3D Pictorial Slab detailing showing two-way mesh layout
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.05)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+      ctx.lineWidth = 1.2;
 
-      const w = 70;
-      const l = 90;
-      
-      // Bottom precast plank
-      const v1 = [
-        project3D(-l, 5, -w), project3D(l, 5, -w), project3D(l, -15, -w), project3D(-l, -15, -w),
-        project3D(-l, 5, w), project3D(l, 5, w), project3D(l, -15, w), project3D(-l, -15, w)
+      const w = 60;
+      const l = 80;
+
+      // Bottom precast slab
+      const v = [
+        project3D(-l, 10, -w), project3D(l, 10, -w), project3D(l, -15, -w), project3D(-l, -15, -w),
+        project3D(-l, 10, w), project3D(l, 10, w), project3D(l, -15, w), project3D(-l, -15, w)
       ];
+
       ctx.beginPath();
-      ctx.moveTo(v1[0].x, v1[0].y); ctx.lineTo(v1[1].x, v1[1].y);
-      ctx.lineTo(v1[5].x, v1[5].y); ctx.lineTo(v1[4].x, v1[4].y);
+      ctx.moveTo(v[0].x, v[0].y); ctx.lineTo(v[1].x, v[1].y);
+      ctx.lineTo(v[5].x, v[5].y); ctx.lineTo(v[4].x, v[4].y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
 
-      // Top in-situ topping
-      ctx.fillStyle = 'rgba(255, 107, 0, 0.08)';
-      ctx.strokeStyle = 'rgba(255, 107, 0, 0.4)';
-      const v2 = [
-        project3D(-l, 25, -w), project3D(l, 25, -w), project3D(l, 5, -w), project3D(-l, 5, -w),
-        project3D(-l, 25, w), project3D(l, 25, w), project3D(l, 5, w), project3D(-l, 5, w)
-      ];
       ctx.beginPath();
-      ctx.moveTo(v2[0].x, v2[0].y); ctx.lineTo(v2[1].x, v2[1].y);
-      ctx.lineTo(v2[5].x, v2[5].y); ctx.lineTo(v2[4].x, v2[4].y);
+      ctx.moveTo(v[4].x, v[4].y); ctx.lineTo(v[5].x, v[5].y);
+      ctx.lineTo(v[6].x, v[6].y); ctx.lineTo(v[7].x, v[7].y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
+
+      // Two way reinforcement mesh (Green & orange grid)
+      ctx.strokeStyle = 'var(--accent-green)';
+      ctx.lineWidth = 1.2;
+      for (let offset = -l + 10; offset < l; offset += 18) {
+        let pt1 = project3D(offset, -5, -w + 6);
+        let pt2 = project3D(offset, -5, w - 6);
+        ctx.beginPath(); ctx.moveTo(pt1.x, pt1.y); ctx.lineTo(pt2.x, pt2.y); ctx.stroke();
+      }
+
+      ctx.strokeStyle = 'var(--accent-orange)';
+      for (let offset = -w + 10; offset < w; offset += 18) {
+        let pt1 = project3D(-l + 6, -5, offset);
+        let pt2 = project3D(l - 6, -5, offset);
+        ctx.beginPath(); ctx.moveTo(pt1.x, pt1.y); ctx.lineTo(pt2.x, pt2.y); ctx.stroke();
+      }
     }
   }
 
   animate() {
     this.time += 0.02;
-    this.drawPileCage();
+    this.drawDetailing();
     requestAnimationFrame(() => this.animate());
   }
 }
