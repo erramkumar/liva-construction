@@ -11,6 +11,8 @@ class App {
     this.navItems = document.querySelectorAll('.nav-item');
     this.sections = document.querySelectorAll('.page-section');
     this.pageTitle = document.getElementById('current-page-title');
+    this.sidebar = document.querySelector('.sidebar');
+    this.menuToggle = document.getElementById('menu-toggle-btn');
     
     // Active solvers references
     this.solvers = {
@@ -25,6 +27,7 @@ class App {
 
     this.initNavigation();
     this.initHeroAnimation();
+    this.initMobileMenu();
     
     // Default load Dashboard solver
     this.handleRoute('dashboard');
@@ -52,6 +55,21 @@ class App {
     window.switchTab = (tab) => this.switchTab(tab);
   }
 
+  initMobileMenu() {
+    if (this.menuToggle && this.sidebar) {
+      this.menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sidebar.classList.toggle('active');
+      });
+      
+      document.addEventListener('click', (e) => {
+        if (this.sidebar.classList.contains('active') && !this.sidebar.contains(e.target) && e.target !== this.menuToggle) {
+          this.sidebar.classList.remove('active');
+        }
+      });
+    }
+  }
+
   switchTab(tabId) {
     let activeItem = null;
     this.navItems.forEach(item => {
@@ -62,6 +80,10 @@ class App {
         item.classList.remove('active');
       }
     });
+
+    if (this.sidebar) {
+      this.sidebar.classList.remove('active');
+    }
 
     if (!activeItem) return;
 

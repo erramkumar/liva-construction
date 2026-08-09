@@ -734,3 +734,80 @@ select {
   border: 1px solid rgba(0, 230, 118, 0.25);
   color: var(--accent-green);
 }
+
+/* Mobile Responsiveness Media Queries */
+@media (max-width: 1024px) {
+  .app-container {
+    flex-direction: column;
+    overflow: auto;
+    height: auto;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    transform: translateX(-100%);
+    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .sidebar.active {
+    transform: translateX(0);
+  }
+  
+  .menu-toggle {
+    display: block !important;
+  }
+  
+  .header {
+    padding: 0 16px;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+  
+  .main-wrapper {
+    height: auto;
+    overflow: visible;
+  }
+  
+  .content-body {
+    overflow: visible;
+  }
+  
+  .calculator-container {
+    grid-template-columns: 1fr !important;
+    gap: 20px;
+  }
+  
+  .cases-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  
+  .feature-grid {
+    grid-template-columns: 1fr !important;
+    gap: 15px;
+  }
+  
+  .hero-section {
+    padding: 24px 16px !important;
+    height: auto !important;
+    min-height: 200px;
+  }
+  
+  .page-section {
+    padding: 16px 12px !important;
+  }
+  
+  .control-panel, .display-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .pile-animation-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
