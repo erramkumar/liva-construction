@@ -140,22 +140,23 @@ class App {
     }
   }
 
-  // --- ADVANCED HUD & DYNAMIC CIVIL STRUCTURE ANIMATION ENGINE ---
+  // --- PROFESSIONAL 3D GEODESIC DOME ANALYSIS SIMULATION ---
   initHeroAnimation() {
     const canvas = document.getElementById('heroCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    let nodes = [];
-    let members = [];
     let width = 0;
     let height = 0;
     let scrollPercent = 0;
-    let pulseTime = 0;
+    let rotY = 0;
+    let rotX = -0.25;
+    let time = 0;
     
     let mouse = { x: -1000, y: -1000, active: false };
+    let domeNodes = [];
     
-    // Bind scroll events on main-wrapper container
+    // Bind scroll events
     const scrollContainer = document.querySelector('.main-wrapper');
     if (scrollContainer) {
       scrollContainer.addEventListener('scroll', () => {
@@ -168,289 +169,196 @@ class App {
       const rect = canvas.parentElement.getBoundingClientRect();
       width = canvas.width = rect.width;
       height = canvas.height = rect.height;
-      setupTruss();
+      setupDome();
     };
     
-    const stiffness = 0.08;
-    const damping = 0.82;
-    const forceFactor = 280;
-    
-    const setupTruss = () => {
-      nodes = [];
-      members = [];
+    // Initialize points of a geodesic dome structure
+    const setupDome = () => {
+      domeNodes = [];
+      const rings = [
+        { r: 160, y: -80, count: 16 },
+        { r: 140, y: -40, count: 16 },
+        { r: 110, y: 5,   count: 16 },
+        { r: 70,  y: 45,  count: 12 },
+        { r: 30,  y: 70,  count: 8 },
+        { r: 0,   y: 85,  count: 1 }
+      ];
       
-      const cols = 8;
-      const rows = 3;
-      const spacingX = width / (cols - 1);
-      const spacingY = height / (rows + 1.5);
-      
-      // Setup interactive base truss at bottom
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const bx = c * spacingX;
-          const by = height - 120 + r * 45;
-          const isSupport = (r === rows - 1 && (c === 0 || c === cols - 1));
-          
-          nodes.push({
-            x: bx,
-            y: by,
-            baseX: bx,
-            baseY: by,
-            vx: 0,
-            vy: 0,
-            isSupport: isSupport,
-            load: 0
+      rings.forEach((ring, ringIdx) => {
+        for (let i = 0; i < ring.count; i++) {
+          const theta = (i / ring.count) * Math.PI * 2;
+          domeNodes.push({
+            x: ring.r * Math.cos(theta),
+            y: ring.y,
+            z: ring.r * Math.sin(theta),
+            ringIdx: ringIdx,
+            nodeIdx: i,
+            count: ring.count
           });
         }
-      }
-      
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const idx = r * cols + c;
-          if (c < cols - 1) {
-            members.push({ from: idx, to: idx + 1, stress: 0 });
-          }
-          if (r < rows - 1) {
-            members.push({ from: idx, to: idx + cols, stress: 0 });
-          }
-          if (r < rows - 1 && c < cols - 1) {
-            members.push({ from: idx, to: idx + cols + 1, stress: 0 });
-            members.push({ from: idx + 1, to: idx + cols, stress: 0 });
-          }
-        }
-      }
-    };
-    
-    const updatePhysics = () => {
-      pulseTime += 0.05;
-      
-      members.forEach(m => {
-        const n1 = nodes[m.from];
-        const n2 = nodes[m.to];
-        if (!n1 || !n2) return;
-        
-        const dxBase = n1.baseX - n2.baseX;
-        const dyBase = n1.baseY - n2.baseY;
-        const natLen = Math.sqrt(dxBase*dxBase + dyBase*dyBase);
-        
-        const dx = n1.x - n2.x;
-        const dy = n1.y - n2.y;
-        const curLen = Math.sqrt(dx*dx + dy*dy);
-        if (curLen === 0) return;
-        
-        const force = (curLen - natLen) * stiffness;
-        const ux = dx / curLen;
-        const uy = dy / curLen;
-        
-        m.stress = Math.abs(curLen - natLen);
-        
-        if (!n1.isSupport) {
-          n1.vx -= force * ux;
-          n1.vy -= force * uy;
-        }
-        if (!n2.isSupport) {
-          n2.vx += force * ux;
-          n2.vy += force * uy;
-        }
-      });
-      
-      nodes.forEach(node => {
-        if (node.isSupport) return;
-        
-        const rx = (node.baseX - node.x) * 0.03;
-        const ry = (node.baseY - node.y) * 0.03;
-        node.vx += rx;
-        node.vy += ry;
-        
-        if (mouse.active) {
-          const dx = node.x - mouse.x;
-          const dy = node.y - mouse.y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < 150 && dist > 1) {
-            const push = (150 - dist) / 150 * forceFactor * 0.01;
-            node.vx += (dx / dist) * push;
-            node.vy += (dy / dist) * push;
-          }
-        }
-        
-        node.vx *= damping;
-        node.vy *= damping;
-        node.x += node.vx;
-        node.y += node.vy;
       });
     };
     
-    const drawTruss = () => {
+    const drawDome = () => {
       ctx.clearRect(0, 0, width, height);
+      time += 0.01;
       
-      // Blueprint grid Lines
+      // Blueprint grid backdrop
       ctx.strokeStyle = 'rgba(0, 240, 255, 0.01)';
       ctx.lineWidth = 1;
-      for (let x = 0; x < width; x += 25) {
+      for (let x = 0; x < width; x += 30) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
       }
-      for (let y = 0; y < height; y += 25) {
+      for (let y = 0; y < height; y += 30) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
       }
       
-      // 1. Draw Holographic background building construction
-      drawHoloBuilding();
+      // Rotational dynamics (auto rotation + mouse influence)
+      const targetRotY = time * 0.15 + (mouse.active ? (mouse.x - width/2) * 0.003 : 0);
+      const targetRotX = -0.3 + (mouse.active ? (mouse.y - height/2) * 0.0015 : 0);
       
-      // 2. Draw Interactive Base Truss
-      members.forEach(m => {
-        const n1 = nodes[m.from];
-        const n2 = nodes[m.to];
-        const alpha = Math.min(0.04 + m.stress * 0.1, 0.7);
-        const color = m.stress > 2.0 
-          ? `rgba(255, 107, 0, ${alpha})` 
-          : `rgba(0, 240, 255, ${alpha})`;
-          
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.2 + m.stress * 0.5;
-        ctx.beginPath();
-        ctx.moveTo(n1.x, n1.y);
-        ctx.lineTo(n2.x, n2.y);
-        ctx.stroke();
+      rotY += (targetRotY - rotY) * 0.08;
+      rotX += (targetRotX - rotX) * 0.08;
+      
+      const cX = width / 2;
+      const cY = height / 2 + 10;
+      const scale = 1.35 * (width / 500);
+      const dist = 500;
+      
+      // 3D coordinate projection
+      const projected = domeNodes.map(node => {
+        // Rotate Y
+        let x1 = node.x * Math.cos(rotY) - node.z * Math.sin(rotY);
+        let z1 = node.x * Math.sin(rotY) + node.z * Math.cos(rotY);
+        // Rotate X
+        let y2 = node.y * Math.cos(rotX) - z1 * Math.sin(rotX);
+        let z2 = node.y * Math.sin(rotX) + z1 * Math.cos(rotX);
+        
+        // Perspective projection
+        const px = cX + (x1 * dist) / (z2 + dist) * scale;
+        const py = cY - (y2 * dist) / (z2 + dist) * scale;
+        
+        return {
+          x: px,
+          y: py,
+          zDepth: z2,
+          ringIdx: node.ringIdx,
+          nodeIdx: node.nodeIdx,
+          count: node.count
+        };
       });
       
-      nodes.forEach(node => {
-        ctx.beginPath();
-        if (node.isSupport) {
-          ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
-          ctx.fillStyle = '#0a101f';
-          ctx.lineWidth = 1.5;
-          ctx.moveTo(node.x, node.y);
-          ctx.lineTo(node.x - 6, node.y + 10);
-          ctx.lineTo(node.x + 6, node.y + 10);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-        } else {
-          ctx.fillStyle = 'rgba(8, 12, 20, 0.8)';
-          ctx.strokeStyle = '#00f0ff';
-          ctx.lineWidth = 1;
-          ctx.arc(node.x, node.y, 3, 0, Math.PI * 2);
-          ctx.fill();
+      // Calculate growth limit based on scroll
+      const activeRingsLimit = Math.max(1, Math.floor(scrollPercent * 6.5));
+      
+      // Draw connection lines
+      ctx.lineWidth = 1;
+      projected.forEach((p1, idx) => {
+        if (p1.ringIdx >= activeRingsLimit) return; // scroll construction check
+        
+        // 1. Ring horizontal connections
+        const nextIdx = p1.nodeIdx === p1.count - 1 ? idx - p1.count + 1 : idx + 1;
+        const p2 = projected[nextIdx];
+        if (p2 && p2.ringIdx < activeRingsLimit) {
+          ctx.strokeStyle = `rgba(0, 240, 255, ${0.15 + (p1.zDepth + 200)/1000})`;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
           ctx.stroke();
         }
+        
+        // 2. Rib vertical connections to next ring
+        if (p1.ringIdx < 5) {
+          const nextRingFirstIdx = domeNodes.findIndex(n => n.ringIdx === p1.ringIdx + 1);
+          const nextRingCount = domeNodes.filter(n => n.ringIdx === p1.ringIdx + 1).length;
+          
+          if (nextRingFirstIdx !== -1) {
+            // Find closest matching node in next ring
+            const ratio = p1.nodeIdx / p1.count;
+            const targetNodeIdx = Math.round(ratio * nextRingCount) % nextRingCount;
+            const p3 = projected[nextRingFirstIdx + targetNodeIdx];
+            
+            if (p3 && p3.ringIdx < activeRingsLimit) {
+              ctx.strokeStyle = `rgba(255, 107, 0, ${0.12 + (p1.zDepth + 200)/1000})`;
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p3.x, p3.y);
+              ctx.stroke();
+            }
+          }
+        }
       });
-
-      // 3. Draw mouse pointer stress halo
-      if (mouse.active) {
+      
+      // Draw nodes
+      let closestNode = null;
+      let minDist = 40;
+      
+      projected.forEach(p => {
+        if (p.ringIdx >= activeRingsLimit) return;
+        
+        // Node point size based on depth
+        const radius = Math.max(1.5, 2.5 + p.zDepth * 0.005);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        
+        // Check mouse proximity
+        if (mouse.active) {
+          const dx = p.x - mouse.x;
+          const dy = p.y - mouse.y;
+          const d = Math.sqrt(dx*dx + dy*dy);
+          if (d < minDist) {
+            minDist = d;
+            closestNode = p;
+          }
+        }
+        
+        ctx.fillStyle = p.ringIdx === activeRingsLimit - 1 ? 'rgba(255, 107, 0, 0.7)' : 'rgba(0, 240, 255, 0.6)';
+        ctx.fill();
+      });
+      
+      // Highlight nearest node & draw vector analysis line
+      if (closestNode) {
         ctx.save();
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'var(--accent-orange)';
+        ctx.lineWidth = 1.5;
+        
+        // Highlight circle
         ctx.beginPath();
-        ctx.arc(mouse.x, mouse.y, 45, 0, Math.PI * 2);
+        ctx.arc(closestNode.x, closestNode.y, 8, 0, Math.PI * 2);
         ctx.stroke();
         
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
+        // Load line pointing down
+        ctx.strokeStyle = 'rgba(255, 107, 0, 0.7)';
         ctx.beginPath();
-        ctx.arc(mouse.x, mouse.y, 100, 0, Math.PI * 2);
+        ctx.moveTo(closestNode.x, closestNode.y);
+        ctx.lineTo(closestNode.x, closestNode.y + 40);
         ctx.stroke();
         
-        // HUD coordinate tag
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
-        ctx.font = '8px JetBrains Mono';
-        ctx.fillText(`X:${Math.round(mouse.x)} Y:${Math.round(mouse.y)}`, mouse.x + 10, mouse.y - 10);
+        // Vector arrow head
+        ctx.fillStyle = 'rgba(255, 107, 0, 0.9)';
+        ctx.beginPath();
+        ctx.moveTo(closestNode.x - 4, closestNode.y + 32);
+        ctx.lineTo(closestNode.x, closestNode.y + 40);
+        ctx.lineTo(closestNode.x + 4, closestNode.y + 32);
+        ctx.fill();
+        
+        // Analysis readout labels
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '9px JetBrains Mono';
+        ctx.fillText(`Node ID: R${closestNode.ringIdx}-N${closestNode.nodeIdx}`, closestNode.x + 12, closestNode.y - 12);
+        ctx.fillStyle = 'var(--accent-cyan)';
+        ctx.fillText(`Force: ${(350 + closestNode.zDepth * 0.5).toFixed(0)} kN`, closestNode.x + 12, closestNode.y + 2);
+        ctx.fillText(`Moment: ${(24 + closestNode.zDepth * 0.05).toFixed(1)} kNm`, closestNode.x + 12, closestNode.y + 14);
         ctx.restore();
       }
-    };
-    
-    // Draw glowing skyscraper blueprint growing as scrollPercent increases
-    const drawHoloBuilding = () => {
-      const bX = width - 180; // building position
-      const bY = height - 120;
-      const bW = 85;
-      const totalStories = 6;
-      const storyH = 35;
       
-      const targetHeight = scrollPercent * (totalStories * storyH);
-      
+      // 3D HUD readouts
       ctx.save();
-      // Draw foundation blocks
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(bX - 10, bY, bW + 20, 8);
-      ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
-      ctx.fillRect(bX - 10, bY, bW + 20, 8);
-      
-      // Draw building stories
-      for (let s = 0; s < totalStories; s++) {
-        const storyBottom = bY - s * storyH;
-        
-        // Only draw if height reached by scroll progress
-        if (targetHeight >= (s * storyH)) {
-          const currentStoryH = Math.min(storyH, targetHeight - s * storyH);
-          const storyTop = storyBottom - currentStoryH;
-          
-          // Columns
-          ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          // Left column
-          ctx.moveTo(bX, storyBottom); ctx.lineTo(bX, storyTop);
-          // Mid column
-          ctx.moveTo(bX + bW/2, storyBottom); ctx.lineTo(bX + bW/2, storyTop);
-          // Right column
-          ctx.moveTo(bX + bW, storyBottom); ctx.lineTo(bX + bW, storyTop);
-          ctx.stroke();
-          
-          // Horizontal floors
-          ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
-          ctx.beginPath();
-          ctx.moveTo(bX, storyTop); ctx.lineTo(bX + bW, storyTop);
-          ctx.stroke();
-          
-          // Diagonal bracing
-          ctx.strokeStyle = 'rgba(255, 107, 0, 0.15)';
-          ctx.beginPath();
-          ctx.moveTo(bX, storyBottom); ctx.lineTo(bX + bW/2, storyTop);
-          ctx.moveTo(bX + bW, storyBottom); ctx.lineTo(bX + bW/2, storyTop);
-          ctx.moveTo(bX + bW/2, storyBottom); ctx.lineTo(bX, storyTop);
-          ctx.moveTo(bX + bW/2, storyBottom); ctx.lineTo(bX + bW, storyTop);
-          ctx.stroke();
-        }
-      }
-      
-      // Draw construction crane on top
-      const craneY = bY - targetHeight;
-      ctx.strokeStyle = 'rgba(255, 107, 0, 0.45)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      // Crane mast
-      ctx.moveTo(bX + bW/2, craneY);
-      ctx.lineTo(bX + bW/2, craneY - 20);
-      // Crane jib (arm)
-      ctx.moveTo(bX + bW/2 - 35, craneY - 20);
-      ctx.lineTo(bX + bW/2 + 25, craneY - 20);
-      ctx.stroke();
-      
-      // Crane hook wire
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(bX + bW/2 - 25, craneY - 20);
-      ctx.lineTo(bX + bW/2 - 25, craneY - 5);
-      ctx.stroke();
-      
-      // Dimension helper indicator
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.beginPath();
-      ctx.moveTo(bX - 25, bY);
-      ctx.lineTo(bX - 25, bY - targetHeight);
-      ctx.stroke();
-      
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.font = '8px JetBrains Mono';
-      ctx.fillText(`${(scrollPercent * 60).toFixed(1)}m`, bX - 58, bY - targetHeight/2);
-      
-      // Digital HUD readout overlay
-      ctx.fillStyle = 'rgba(0, 240, 255, 0.6)';
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
       ctx.font = '9px JetBrains Mono';
-      ctx.fillText(`HUD ID: CIVIC-TOWER-09`, bX - 100, bY - 220);
-      ctx.fillText(`STATUS: EXTRUDING FRAME`, bX - 100, bY - 205);
-      ctx.fillText(`LOAD COMPLIANCE: 100%`, bX - 100, bY - 190);
+      ctx.fillText(`MODEL: DOME_BLUEPRINT_3D`, 20, height - 70);
+      ctx.fillText(`SCALE: ${scale.toFixed(2)}x`, 20, height - 55);
+      ctx.fillText(`CONSTRUCTION LEVEL: ${Math.round(scrollPercent * 100)}%`, 20, height - 40);
       ctx.restore();
     };
     
@@ -466,8 +374,7 @@ class App {
     });
     
     const animate = () => {
-      updatePhysics();
-      drawTruss();
+      drawDome();
       requestAnimationFrame(animate);
     };
     
