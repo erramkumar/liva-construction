@@ -1,6 +1,8 @@
 import { BeamSolver } from './js/beamSolver.js';
 import { ColumnSolver } from './js/columnSolver.js';
 import { PileSolver } from './js/pileSolver.js';
+import { SlabSolver } from './js/slabSolver.js';
+import { MuffSolver } from './js/muffSolver.js';
 import { QuantityEstimator } from './js/quantityEstimator.js';
 import { StructuralPlanner } from './js/structuralPlanner.js';
 
@@ -15,6 +17,8 @@ class App {
       beam: null,
       column: null,
       pile: null,
+      slab: null,
+      muff: null,
       quantity: null,
       planner: null
     };
@@ -95,6 +99,14 @@ class App {
         break;
       case 'pile':
         if (!this.solvers.pile) this.solvers.pile = new PileSolver();
+        break;
+      case 'slab':
+        if (!this.solvers.slab) this.solvers.slab = new SlabSolver();
+        else this.solvers.slab.solve();
+        break;
+      case 'muff':
+        if (!this.solvers.muff) this.solvers.muff = new MuffSolver();
+        else this.solvers.muff.solve();
         break;
       case 'quantity':
         if (!this.solvers.quantity) this.solvers.quantity = new QuantityEstimator();

@@ -97,6 +97,18 @@
             Pile Foundation
           </a>
         </li>
+        <li class="nav-item" data-tab="slab">
+          <a href="#slab">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+            Two-Way Slab
+          </a>
+        </li>
+        <li class="nav-item" data-tab="muff">
+          <a href="#muff">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"></path></svg>
+            Precast Pile Muff
+          </a>
+        </li>
         <li class="nav-item" data-tab="quantity">
           <a href="#quantity">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"></path><path d="M8 10h8M8 14h8"></path></svg>
@@ -779,6 +791,332 @@
                 <div class="canvas-wrapper" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #070b13;">
                   <canvas id="pileStructCanvas" class="canvas-element" style="position: absolute; top:0; left:0; width:100%; height:100%;"></canvas>
                 </div>
+              </div>
+            </div>
+        </section>
+
+        <!-- TWO-WAY SLAB TAB -->
+        <section id="slab" class="page-section">
+          <div class="calculator-container" style="grid-template-columns: 460px 1fr;">
+            <!-- CONTROL PANEL -->
+            <div class="control-panel">
+              <h3 class="panel-title">Slab Properties & Reinforcement</h3>
+              
+              <div class="input-group">
+                <label class="input-label">Slab Geometry (Lx x Ly)</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Shorter Span Lx (mm)</span>
+                    <input type="number" id="input-slab-lx" value="3500">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Longer Span Ly (mm)</span>
+                    <input type="number" id="input-slab-ly" value="5000">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Precast Thickness Dp (mm)</span>
+                    <input type="number" id="input-slab-dp" value="150">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">In-Situ Topping Dt (mm)</span>
+                    <input type="number" id="input-slab-dt" value="150">
+                  </div>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label">Reinforcement Layout (Both ways / Top & Bottom)</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Bar Diameter (mm)</span>
+                    <input type="number" id="input-slab-dia" value="16">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Clear Cover (mm)</span>
+                    <input type="number" id="input-slab-cover" value="50">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Spacing Short Span S_x (mm)</span>
+                    <input type="number" id="input-slab-sx" value="150">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Spacing Long Span S_y (mm)</span>
+                    <input type="number" id="input-slab-sy" value="200">
+                  </div>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label">Material Grades & Design Loads</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Concrete grade</span>
+                    <select id="input-slab-concrete">
+                      <option value="30">M30</option>
+                      <option value="35">M35</option>
+                      <option value="40" selected>M40</option>
+                    </select>
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Steel grade f_y</span>
+                    <input type="number" id="input-slab-fy" value="500">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Design Live Load (kN/m²)</span>
+                    <input type="number" id="input-slab-load-live" value="10" step="0.5">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Construction LL (kN/m²)</span>
+                    <input type="number" id="input-slab-load-const" value="1.5" step="0.1">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DISPLAY PANEL -->
+            <div class="display-panel">
+              <!-- Slab Stage Tabs -->
+              <div style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color-soft); padding-bottom: 10px;">
+                <button class="btn btn-primary" id="btn-slab-s1" style="padding: 6px 12px; font-size:12px;">Stage 1: Construction (Precast Plank Only)</button>
+                <button class="btn" id="btn-slab-s2" style="padding: 6px 12px; font-size:12px;">Stage 2: Service Stage (Composite Slab)</button>
+              </div>
+
+              <!-- STAGE 1 OUTPUTS -->
+              <div id="slab-s1-outputs" style="display: flex; flex-direction: column; gap: 15px; flex-grow: 1;">
+                <h3 class="panel-title" style="margin: 0;">Stage 1 - Simply Supported Plank Check</h3>
+                <div class="table-wrapper">
+                  <table class="calc-table">
+                    <thead>
+                      <tr>
+                        <th>Parameter</th>
+                        <th>Shorter Span</th>
+                        <th>Longer Span</th>
+                        <th>Verification Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Factored Moment (kNm)</td>
+                        <td id="res-slab-s1-mx">10.08</td>
+                        <td id="res-slab-s1-my">3.79</td>
+                        <td rowspan="3" style="vertical-align: middle; text-align: center; border-left: 1px solid var(--border-color-soft);">
+                          <div id="status-slab-s1" class="badge-ok">STAGE 1 SAFE</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Req. Steel Area (mm²)</td>
+                        <td id="res-slab-s1-astx-req">261</td>
+                        <td id="res-slab-s1-asty-req">117</td>
+                      </tr>
+                      <tr>
+                        <td>Prov. Steel Area (mm²)</td>
+                        <td id="res-slab-s1-astx-prov">1340</td>
+                        <td id="res-slab-s1-asty-prov">1005</td>
+                      </tr>
+                      <tr>
+                        <td>Nominal Shear Stress</td>
+                        <td id="res-slab-s1-tauv">0.26 MPa</td>
+                        <td>Concrete Capacity:</td>
+                        <td id="res-slab-s1-tauc" style="color: var(--accent-green);">0.78 MPa (O.K.)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- STAGE 2 OUTPUTS -->
+              <div id="slab-s2-outputs" style="display: none; flex-direction: column; gap: 15px; flex-grow: 1;">
+                <h3 class="panel-title" style="margin: 0;">Stage 2 - Fixed Composite Slab Bending Check</h3>
+                <div class="table-wrapper">
+                  <table class="calc-table">
+                    <thead>
+                      <tr>
+                        <th>Parameter</th>
+                        <th>Sagging Short Span</th>
+                        <th>Hogging Long Span</th>
+                        <th>Verification Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Factored Moment (kNm)</td>
+                        <td id="res-slab-s2-mx">46.68</td>
+                        <td id="res-slab-s2-my">32.57</td>
+                        <td rowspan="3" style="vertical-align: middle; text-align: center; border-left: 1px solid var(--border-color-soft);">
+                          <div id="status-slab-s2" class="badge-ok">STAGE 2 SAFE</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Req. Steel Area (mm²)</td>
+                        <td id="res-slab-s2-astx-req">454</td>
+                        <td id="res-slab-s2-asty-req">338</td>
+                      </tr>
+                      <tr>
+                        <td>Prov. Steel Area (mm²)</td>
+                        <td id="res-slab-s2-astx-prov">1340</td>
+                        <td id="res-slab-s2-asty-prov">1005</td>
+                      </tr>
+                      <tr>
+                        <td>Nominal Shear Stress</td>
+                        <td id="res-slab-s2-tauv">0.30 MPa</td>
+                        <td>Concrete Capacity:</td>
+                        <td id="res-slab-s2-tauc" style="color: var(--accent-green);">0.53 MPa (O.K.)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Composite section canvas -->
+              <div class="canvas-wrapper" style="height: 200px; display: flex; align-items: center; justify-content: center; background: #070b13; margin-top: 10px;">
+                <canvas id="slabCanvas" class="canvas-element" style="width:100%; height:100%;"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRECAST PILE MUFF TAB -->
+        <section id="muff" class="page-section">
+          <div class="calculator-container" style="grid-template-columns: 460px 1fr;">
+            <!-- CONTROL PANEL -->
+            <div class="control-panel">
+              <h3 class="panel-title">Pile Muff Dimensions & Loads</h3>
+              
+              <div class="input-group">
+                <label class="input-label">Muff Dimensions</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Width W_m (mm)</span>
+                    <input type="number" id="input-muff-wm" value="1800">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Length L_m (mm)</span>
+                    <input type="number" id="input-muff-lm" value="1800">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Depth D_f (mm)</span>
+                    <input type="number" id="input-muff-df" value="1000">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Opening Dia D_o (mm)</span>
+                    <input type="number" id="input-muff-do" value="1350">
+                  </div>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label">Reinforcement cage</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Main bar Dia (mm)</span>
+                    <input type="number" id="input-muff-dia" value="20">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Spacing S_x (mm)</span>
+                    <input type="number" id="input-muff-sx" value="150">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Stirrups Link (mm)</span>
+                    <input type="number" id="input-muff-ds" value="12">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Stirrup legs</span>
+                    <input type="number" id="input-muff-legs" value="4">
+                  </div>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label">Supported Precast Beam Details</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Width B_t (mm)</span>
+                    <input type="number" id="input-muff-bt" value="1300">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Depth D_t (mm)</span>
+                    <input type="number" id="input-muff-dt" value="1300">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Span of Beam L_b (m)</span>
+                    <input type="number" id="input-muff-lb" value="3.5">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">Concrete Grade</span>
+                    <select id="input-muff-concrete">
+                      <option value="30">M30</option>
+                      <option value="35">M35</option>
+                      <option value="40" selected>M40</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DISPLAY PANEL -->
+            <div class="display-panel">
+              <h3 class="panel-title">Pile Muff Structural Capacity Checks</h3>
+              
+              <div class="table-wrapper">
+                <table class="calc-table">
+                  <thead>
+                    <tr>
+                      <th>Loads & Moments</th>
+                      <th>Value Output</th>
+                      <th>Flexural Checks</th>
+                      <th>Shear Verification</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Muff Dead Load (DL1)</td>
+                      <td id="res-muff-dl1">21.3 kN</td>
+                      <td>Required Steel:</td>
+                      <td>Nominal Shear Stress ($\tau_v$):</td>
+                    </tr>
+                    <tr>
+                      <td>Beam Reaction (DL2)</td>
+                      <td id="res-muff-dl2">45.0 kN</td>
+                      <td id="res-muff-ast-req">347 mm²</td>
+                      <td id="res-muff-tauv">0.73 MPa</td>
+                    </tr>
+                    <tr>
+                      <td>Infill Concrete (DL3)</td>
+                      <td id="res-muff-dl3">36.6 kN</td>
+                      <td>Provided Steel:</td>
+                      <td>Concrete shear capacity ($\tau_c$):</td>
+                    </tr>
+                    <tr class="total-row">
+                      <td>Design Factored Load ($1.5w$)</td>
+                      <td id="res-muff-w">154.3 kN</td>
+                      <td id="res-muff-ast-prov" style="color: var(--accent-green);">471 mm² (O.K.)</td>
+                      <td id="res-muff-tauc" style="color: var(--accent-orange);">0.36 MPa (Stirrups req)</td>
+                    </tr>
+                    <tr class="total-row" style="background: rgba(255, 107, 0, 0.04);">
+                      <td>Design Factored Moment ($M_{sx}$)</td>
+                      <td id="res-muff-moment">138.9 kNm</td>
+                      <td id="status-muff-flex" style="color: var(--accent-green) !important;">FLEXURE: SAFE</td>
+                      <td id="status-muff-shear" style="color: var(--accent-green) !important;">Links: 4L-12φ @ 300 c/c</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Schematic Canvas -->
+              <div class="canvas-wrapper" style="height: 240px; display: flex; align-items: center; justify-content: center; background: #070b13; margin-top: 10px;">
+                <canvas id="muffCanvas" class="canvas-element" style="width:100%; height:100%;"></canvas>
               </div>
             </div>
           </div>
